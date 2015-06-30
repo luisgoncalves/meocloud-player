@@ -1,2 +1,2 @@
 # meocloud-player
-Client-side player for music files on MEO Cloud
+Client-side music player for MEO Cloud files
