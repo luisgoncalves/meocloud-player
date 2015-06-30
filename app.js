@@ -68,8 +68,7 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 
     self.prepareAuthzRequest = function () {
 
-        // TODO
-        var state = '1234567890';
+        var state = self.generateState();
         self.storage.setItem('oauth_state', state);
 
         var authzRequest = self.authzUrlTemplate.expand({
@@ -114,10 +113,6 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
         success();
     }
 
-    self.setToken = function (token, expires) {
-
-    }
-
     self.getToken = function () {
         var expires = self.storage.getItem('oauth_expires');
         var token = self.storage.getItem('oauth_token');
@@ -131,5 +126,15 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
         }
 
         return token;
+    }
+
+    self.generateState = function () {
+        var state = new Uint8Array(128 / 8);
+        window.crypto.getRandomValues(state);
+        return btoa(state)
+            // From https://github.com/RGBboy/urlsafe-base64
+            .replace(/\+/g, '-') // Convert '+' to '-'
+            .replace(/\//g, '_') // Convert '/' to '_'
+            .replace(/=+$/, ''); // Remove ending '='
     }
 }
