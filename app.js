@@ -1,12 +1,16 @@
 ﻿page('/', index);
-//  page.exit('/', function () { $('#index').hide(); });
 page('/player', player);
 page('/oauth/authorize', oAuthAuthorize);
 page('/oauth/error/:error', oAuthError);
 
 var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', '4722fde2-2f99-4118-9373-3270c572d003', window.location.origin);
+var cloudClient = new CloudClient('https://publicapi.meocloud.pt/1');
 
 $(page.start);
+
+//
+// Application actions
+//
 
 function index(ctx) {
 
@@ -37,14 +41,26 @@ function index(ctx) {
 }
 
 function player() {
-    console.log("player");
+
+    $('#player').show();
+
     var accessToken = oAuthFlow.getToken();
-    $.ajax({
-        url: 'https://publicapi.meocloud.pt/1/Account/Info',
-        headers: { Authorization: 'Bearer ' + accessToken },
-        success: function (data) {
-            console.log(data);
-        }
+    if (!accessToken) {
+        page('/');
+    }
+
+    //$.ajax({
+    //    url: 'https://publicapi.meocloud.pt/1/Account/Info',
+    //    headers: { Authorization: 'Bearer ' + accessToken },
+    //    success: function (data) {
+    //        console.log(data);
+    //    }
+    //});
+
+    cloudClient.loadFiles(accessToken, 'Music', function () {
+        cloudClient.getRandomFileUrl(function (fileUrl) {
+            $('#player audio').attr('src', fileUrl);
+        })
     });
 }
 
@@ -56,6 +72,10 @@ function oAuthAuthorize() {
 function oAuthError(ctx) {
     console.log("oAuthError: " + ctx.params.error);
 }
+
+//
+// OAuth 2.0 implicit flow logic
+//
 
 function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
     var self = this;
@@ -136,5 +156,80 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
             .replace(/\+/g, '-') // Convert '+' to '-'
             .replace(/\//g, '_') // Convert '/' to '_'
             .replace(/=+$/, ''); // Remove ending '='
+    }
+}
+
+//
+// Cloud client
+//
+
+function CloudClient(apiBaseAddress) {
+    var self = this;
+
+    self.metadataUrlTemplate = new URITemplate(apiBaseAddress + '/Metadata/meocloud/{+path}?list=true');
+    self.mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud/{+path}');
+    self.headers = {};
+
+    self.files = [];
+
+    self.loadFiles = function (accessToken, startPath, done) {
+
+        // startPath must be a folder
+
+        self.headers = { Authorization: 'Bearer ' + accessToken };
+        self.loadFilesInternal([startPath], done, 10)
+    }
+
+    self.loadFilesInternal = function (dirList, done, limit) {
+
+        if (dirList.length == 0 || self.files.length > limit) {
+            console.log('DONE');
+            done();
+            return;
+        }
+
+        // Directories are transversed in depth-first
+
+        var dirPath = dirList.pop();
+        console.log('DIR %s', dirPath);
+
+        $.ajax({
+            url: self.metadataUrlTemplate.expand({ path: dirPath }),
+            headers: self.headers,
+            success: function (dir) {
+                // Directories are added for processing; files are stored.
+                dir.contents.forEach(function (item) {
+                    if (item.is_dir) {
+                        dirList.push(item.path);
+                    } else {
+                        self.addFile(item);
+                    }
+                });
+
+                self.loadFilesInternal(dirList, done, limit);
+            }
+        });
+    }
+
+    self.addFile = function (file) {
+        if (file.mime_type.startsWith('audio/mpeg') || file.mime_type == 'audio/wav') {
+            console.log('ADD %s', file.path);
+            self.files.push(file.path);
+        } else {
+            console.log('IGNORE %s due to mime-type %s', file.path, file.mime_type);
+        }
+    }
+
+    self.getRandomFileUrl = function (done) {
+        var idx = Math.floor(Math.random() * self.files.length);
+        var filePath = self.files[idx];
+        $.ajax({
+            url: self.mediaUrlTemplate.expand({ path: filePath }),
+            method: 'POST',
+            headers: self.headers,
+            success: function (file) {
+                done(file.url);
+            }
+        });
     }
 }
