@@ -4,7 +4,7 @@ page('/oauth/authorize', oAuthAuthorize);
 page('/oauth/error/:error', oAuthError);
 
 var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', '4722fde2-2f99-4118-9373-3270c572d003', window.location.origin);
-var cloudClient = new CloudClient('https://publicapi.meocloud.pt/1');
+//var cloudClient = new CloudClient('https://publicapi.meocloud.pt/1');
 
 $(page.start);
 
@@ -49,6 +49,19 @@ function player() {
         page('/');
     }
 
+    var fileManager = new FileMetadataManager(
+        new CloudClient_V2('https://publicapi.meocloud.pt/1', accessToken)
+    );
+
+    var getRandomFileAndSetPlayer = function () {
+        fileManager.getRandomFileUrl(function (fileUrl) {
+            $('#player audio').attr('src', fileUrl);
+        })
+    };
+
+    fileManager.update('Music', getRandomFileAndSetPlayer);
+    $('#player button').click(getRandomFileAndSetPlayer);
+
     //$.ajax({
     //    url: 'https://publicapi.meocloud.pt/1/Account/Info',
     //    headers: { Authorization: 'Bearer ' + accessToken },
@@ -57,11 +70,11 @@ function player() {
     //    }
     //});
 
-    cloudClient.loadFiles(accessToken, 'Music', function () {
-        cloudClient.getRandomFileUrl(function (fileUrl) {
-            $('#player audio').attr('src', fileUrl);
-        })
-    });
+    //cloudClient.loadFiles(accessToken, 'Music', function () {
+    //    cloudClient.getRandomFileUrl(function (fileUrl) {
+    //        $('#player audio').attr('src', fileUrl);
+    //    })
+    //});
 }
 
 function oAuthAuthorize() {
@@ -71,6 +84,67 @@ function oAuthAuthorize() {
 
 function oAuthError(ctx) {
     console.log("oAuthError: " + ctx.params.error);
+}
+
+//
+// Local file metadata manager
+//
+
+function FileMetadataManager(cloudClient) {
+    var self = this;
+
+    self.cloudClient = cloudClient;
+    self.files = [];
+
+    self.update = function (startPath, done) {
+        var cursor = null;
+        self.cloudClient.delta(
+            cursor,
+            self.processPathUpdate,
+            self.purgePath,
+            function () { return self.files.length < 200 },
+            function (finalCursor) { done(); }
+        );
+    }
+
+    self.processPathUpdate = function (item) {
+        if (item.is_dir) {
+            console.log('DIR %s', item.path);
+        } else {
+            self.addFile(item);
+        }
+    }
+
+    self.addFile = function (file) {
+        if (file.mime_type.startsWith('audio/mpeg') || file.mime_type == 'audio/wav' || file.path.endsWith('.mp3')) {
+            console.log('ADD %s', file.path);
+            self.files.push({ path: file.path, url: null, expires: null });
+        } else {
+            console.log('IGNORE %s due to mime-type %s', file.path, file.mime_type);
+        }
+    }
+
+    self.purgePath = function (path) {
+        console.log('PURGE %s', path);
+    }
+
+    self.getRandomFileUrl = function (done) {
+        var idx = Math.floor(Math.random() * self.files.length);
+        var file = self.files[idx];
+
+        if (file.url && file.expires > Date.now()) {
+            done(file.url);
+            return;
+        }
+
+        self.cloudClient.getFileUrl(
+            file.path,
+            function (data) {
+                file.url = data.url;
+                file.expires = new Date(data.expires);
+                done(file.url);
+            });
+    }
 }
 
 //
@@ -163,6 +237,57 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 // Cloud client
 //
 
+function CloudClient_V2(apiBaseAddress, accessToken) {
+    var self = this;
+
+    self.deltaUrl = apiBaseAddress + '/Delta';
+    self.mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud/{+path}');
+    self.headers = { Authorization: 'Bearer ' + accessToken };
+
+    // Checks for incoming changes since a given reference cursor.
+    self.delta = function (
+        cursor, // The reference cursor. Can be null, which will fetch everything
+        onPathUpdated, // Callback invoked for every delta of existing files/dirs (created or updated)
+        onPathRemoved, // Callback for deltas of removed paths
+        shouldProceed, // Callback to determine if more deltas should be processed
+        done // Final callback when there aren't more changes to process
+    ) {
+        console.log('= DELTA %s', cursor);
+        $.ajax({
+            url: self.deltaUrl,
+            method: 'POST',
+            headers: self.headers,
+            data: { cursor: cursor },
+            success: function (data) {
+
+                data.entries.forEach(function (delta) {
+                    // delta => [path, metadata]
+                    if (delta[1] != null) {
+                        onPathUpdated(delta[1])
+                    } else {
+                        onPathRemoved(delta[0]);
+                    }
+                });
+
+                if (data.has_more && shouldProceed()) {
+                    self.delta(data.cursor, onPathUpdated, onPathRemoved, shouldProceed, done);
+                } else {
+                    done(data.cursor);
+                }
+            }
+        });
+    }
+
+    self.getFileUrl = function (filePath, done) {
+        $.ajax({
+            url: self.mediaUrlTemplate.expand({ path: filePath }),
+            method: 'POST',
+            headers: self.headers,
+            success: done
+        });
+    }
+}
+
 function CloudClient(apiBaseAddress) {
     var self = this;
 
@@ -197,6 +322,7 @@ function CloudClient(apiBaseAddress) {
             url: self.metadataUrlTemplate.expand({ path: dirPath }),
             headers: self.headers,
             success: function (dir) {
+                console.log('HASH %s - %s', dir.hash, dir.path);
                 // Directories are added for processing; files are stored.
                 dir.contents.forEach(function (item) {
                     if (item.is_dir) {
