@@ -46,20 +46,25 @@ function player() {
         page('/');
     }
 
-    $('#player').show();
-
     var fileManager = new FileMetadataManager(
         new CloudClient('https://publicapi.meocloud.pt/1', accessToken)
     );
 
-    var getRandomFileAndSetPlayer = function () {
+    var getAndPlayRandomFile = function () {
         fileManager.getRandomFileUrl(function (fileUrl) {
             $('#player audio').attr('src', fileUrl);
         })
     };
 
-    fileManager.update('Music', getRandomFileAndSetPlayer);
-    $('#player button').click(getRandomFileAndSetPlayer);
+    $('#player audio').bind('ended', getAndPlayRandomFile);
+    $('#next').click(getAndPlayRandomFile);
+    $('#refresh').click(function () {
+        fileManager.update(function () { });
+    });
+
+    $('#player').show();
+
+    fileManager.update(getAndPlayRandomFile);
 
     //$.ajax({
     //    url: 'https://publicapi.meocloud.pt/1/Account/Info',
@@ -67,12 +72,6 @@ function player() {
     //    success: function (data) {
     //        console.log(data);
     //    }
-    //});
-
-    //cloudClient.loadFiles(accessToken, 'Music', function () {
-    //    cloudClient.getRandomFileUrl(function (fileUrl) {
-    //        $('#player audio').attr('src', fileUrl);
-    //    })
     //});
 }
 
@@ -96,7 +95,7 @@ function FileMetadataManager(cloudClient) {
     self.db = null;
     self.count = null;
 
-    self.update = function (startPath, done) {
+    self.update = function (done) {
         self.openDb(function () {
             // Get updates since the last known cursor
             console.log('UPDATE STARTED');
@@ -195,10 +194,11 @@ function FileMetadataManager(cloudClient) {
                 done(file.url);
                 return;
             }
-
+            
             self.cloudClient.getFileUrl(
                 file.path,
                 function (data) {
+                    // TODO update file.url and file.expires
                     file.url = data.url;
                     file.expires = new Date(data.expires);
                     done(file.url);
@@ -223,11 +223,14 @@ function FileMetadataManager(cloudClient) {
             };
     }
 
-    // DB methods
-
     const FilesStoreName = 'files';
 
     self.openDb = function (done) {
+        if (self.db != null) {
+            done();
+            return;
+        }
+
         var request = window.indexedDB.open("Player", 1);
         request.onsuccess = function (event) {
             // Store the db object
