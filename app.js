@@ -4,7 +4,6 @@ page('/oauth/authorize', oAuthAuthorize);
 page('/oauth/error/:error', oAuthError);
 
 var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', '4722fde2-2f99-4118-9373-3270c572d003', window.location.origin);
-//var cloudClient = new CloudClient('https://publicapi.meocloud.pt/1');
 
 $(page.start);
 
@@ -42,15 +41,15 @@ function index(ctx) {
 
 function player() {
 
-    $('#player').show();
-
     var accessToken = oAuthFlow.getToken();
     if (!accessToken) {
         page('/');
     }
 
+    $('#player').show();
+
     var fileManager = new FileMetadataManager(
-        new CloudClient_V2('https://publicapi.meocloud.pt/1', accessToken)
+        new CloudClient('https://publicapi.meocloud.pt/1', accessToken)
     );
 
     var getRandomFileAndSetPlayer = function () {
@@ -94,56 +93,157 @@ function FileMetadataManager(cloudClient) {
     var self = this;
 
     self.cloudClient = cloudClient;
-    self.files = [];
+    self.db = null;
+    self.count = null;
 
     self.update = function (startPath, done) {
-        var cursor = null;
-        self.cloudClient.delta(
-            cursor,
-            self.processPathUpdate,
-            self.purgePath,
-            function () { return self.files.length < 200 },
-            function (finalCursor) { done(); }
-        );
+        self.openDb(function () {
+            // Get updates since the last known cursor
+            console.log('UPDATE STARTED');
+            self.cloudClient.delta(
+                window.localStorage.getItem('cloud_last_cursor'),
+                self.deltaProcessor(done)
+            );
+        });
     }
 
-    self.processPathUpdate = function (item) {
-        if (item.is_dir) {
-            console.log('DIR %s', item.path);
+    self.deltaProcessor = function (done) {
+        return function (updatedItems, deletedPaths, cursor, isCompleted) {
+
+            var transaction = self.db.transaction(FilesStoreName, 'readwrite');
+            // DB requests will be triggered on this transaction. When it completes, all the requests have succeeded.
+            transaction.oncomplete = function () {
+                // Store the last known cursor (this helps when something fails in large deltas)
+                window.localStorage.setItem('cloud_last_cursor', cursor);
+                // If this was the last delta, get an updated file count and invoke the callback
+                if (isCompleted) {
+                    self.db
+                        .transaction(FilesStoreName)
+                        .objectStore(FilesStoreName)
+                        .count()
+                        .onsuccess = function (event) {
+                            self.count = event.target.result;
+                            console.info('UPDATE COMPLETED');
+                            done();
+                        };
+                }
+            };
+            var fileStore = transaction.objectStore(FilesStoreName);
+
+            if (deletedPaths.length > 0) {
+                self.purgefiles(deletedPaths, fileStore);
+            }
+
+            updatedItems.forEach(function (item) {
+                if (item.is_dir) {
+                    self.removeFileIfExists(item, fileStore);
+                } else {
+                    self.addFile(item, fileStore);
+                }
+            });
+        };
+    }
+
+    self.purgefiles = function (deletedPaths, fileStore) {
+        console.log('Paths were deleted:');
+        console.log(deletedPaths);
+
+        // Iterate the existing files and remove the deleted paths and all their children
+        fileStore.openCursor().onsuccess = function (event) {
+            var cursor = event.target.result;
+            if (cursor) {
+                // Check if the current file is a child of the deleted paths (or one of them)
+                if (deletedPaths.some(function (v) { return cursor.key.startsWith(v); })) {
+                    cursor.delete().onsuccess = function () {
+                        console.info('REMOVE %s', cursor.key);
+                        cursor.continue();
+                    };
+                } else {
+                    cursor.continue();
+                }
+            }
+        };
+    }
+
+    self.removeFileIfExists = function (item, fileStore) {
+        fileStore
+            .get(item.path)
+            .onsuccess = function (event) {
+                // Was indeed a file. Remove it.
+                if (event.target.result) {
+                    fileStore
+                        .delete(item.path)
+                        .onsuccess = function () { console.info('REMOVE %s', item.path) };
+                }
+            };
+    }
+
+    self.addFile = function (item, fileStore) {
+        if (item.mime_type.startsWith('audio/mpeg') || item.mime_type == 'audio/wav' || item.path.endsWith('.mp3')) {
+            fileStore
+                .put({ path: item.path, url: null, expires: null })
+                .onsuccess = function () { console.info('ADD %s', item.path); };
         } else {
-            self.addFile(item);
+            console.log('IGNORE %s due to mime-type %s', item.path, item.mime_type);
         }
-    }
-
-    self.addFile = function (file) {
-        if (file.mime_type.startsWith('audio/mpeg') || file.mime_type == 'audio/wav' || file.path.endsWith('.mp3')) {
-            console.log('ADD %s', file.path);
-            self.files.push({ path: file.path, url: null, expires: null });
-        } else {
-            console.log('IGNORE %s due to mime-type %s', file.path, file.mime_type);
-        }
-    }
-
-    self.purgePath = function (path) {
-        console.log('PURGE %s', path);
     }
 
     self.getRandomFileUrl = function (done) {
-        var idx = Math.floor(Math.random() * self.files.length);
-        var file = self.files[idx];
-
-        if (file.url && file.expires > Date.now()) {
-            done(file.url);
-            return;
-        }
-
-        self.cloudClient.getFileUrl(
-            file.path,
-            function (data) {
-                file.url = data.url;
-                file.expires = new Date(data.expires);
+        
+        self.getRandomFile(function (file) {
+            if (file.url && file.expires > Date.now()) {
                 done(file.url);
-            });
+                return;
+            }
+
+            self.cloudClient.getFileUrl(
+                file.path,
+                function (data) {
+                    file.url = data.url;
+                    file.expires = new Date(data.expires);
+                    done(file.url);
+                });
+        });
+    }
+
+    self.getRandomFile = function(done){
+        var cnt = Math.floor(Math.random() * self.count);
+        self.db
+            .transaction(FilesStoreName)
+            .objectStore(FilesStoreName)
+            .openCursor()
+            .onsuccess = function (event) {
+                var cursor = event.target.result;
+                if (cnt > 0) {
+                    cursor.advance(cnt);
+                    cnt = -1;
+                } else {
+                    done(cursor.value);
+                }
+            };
+    }
+
+    // DB methods
+
+    const FilesStoreName = 'files';
+
+    self.openDb = function (done) {
+        var request = window.indexedDB.open("Player", 1);
+        request.onsuccess = function (event) {
+            // Store the db object
+            self.db = event.target.result;
+            // Generic error handler
+            self.db.onerror = function (errorEvent) {
+                console.error("Database error: " + errorEvent.target.errorCode);
+            };
+            done();
+        };
+        request.onupgradeneeded = function (event) {
+            // This is invoked before the 'onsuccess' event, if any changes are needed
+            var db = event.target.result;
+            console.log('Creating files object store');
+            db.createObjectStore(FilesStoreName, { keyPath: "path" });
+        }
     }
 }
 
@@ -237,7 +337,7 @@ function OAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 // Cloud client
 //
 
-function CloudClient_V2(apiBaseAddress, accessToken) {
+function CloudClient(apiBaseAddress, accessToken) {
     var self = this;
 
     self.deltaUrl = apiBaseAddress + '/Delta';
@@ -247,12 +347,9 @@ function CloudClient_V2(apiBaseAddress, accessToken) {
     // Checks for incoming changes since a given reference cursor.
     self.delta = function (
         cursor, // The reference cursor. Can be null, which will fetch everything
-        onPathUpdated, // Callback invoked for every delta of existing files/dirs (created or updated)
-        onPathRemoved, // Callback for deltas of removed paths
-        shouldProceed, // Callback to determine if more deltas should be processed
-        done // Final callback when there aren't more changes to process
+        callback // Callback for deltas
     ) {
-        console.log('= DELTA %s', cursor);
+        console.log('DELTA %s', cursor);
         $.ajax({
             url: self.deltaUrl,
             method: 'POST',
@@ -260,19 +357,23 @@ function CloudClient_V2(apiBaseAddress, accessToken) {
             data: { cursor: cursor },
             success: function (data) {
 
+                var updatedItems = [];
+                var deletedPaths = [];
                 data.entries.forEach(function (delta) {
                     // delta => [path, metadata]
-                    if (delta[1] != null) {
-                        onPathUpdated(delta[1])
+                    var item = delta[1];
+                    if (item != null) {
+                        item.path = delta[0]; // Easier for later comparisons (casing is diferent on 'path' and on 'metadata.path')
+                        updatedItems.push(delta[1]);
                     } else {
-                        onPathRemoved(delta[0]);
+                        deletedPaths.push(delta[0]);
                     }
                 });
 
-                if (data.has_more && shouldProceed()) {
-                    self.delta(data.cursor, onPathUpdated, onPathRemoved, shouldProceed, done);
-                } else {
-                    done(data.cursor);
+                callback(updatedItems, deletedPaths, data.cursor, !data.has_more);
+
+                if (data.has_more) {
+                    self.delta(data.cursor, callback);
                 }
             }
         });
@@ -284,78 +385,6 @@ function CloudClient_V2(apiBaseAddress, accessToken) {
             method: 'POST',
             headers: self.headers,
             success: done
-        });
-    }
-}
-
-function CloudClient(apiBaseAddress) {
-    var self = this;
-
-    self.metadataUrlTemplate = new URITemplate(apiBaseAddress + '/Metadata/meocloud/{+path}?list=true');
-    self.mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud/{+path}');
-    self.headers = {};
-
-    self.files = [];
-
-    self.loadFiles = function (accessToken, startPath, done) {
-
-        // startPath must be a folder
-
-        self.headers = { Authorization: 'Bearer ' + accessToken };
-        self.loadFilesInternal([startPath], done, 10)
-    }
-
-    self.loadFilesInternal = function (dirList, done, limit) {
-
-        if (dirList.length == 0 || self.files.length > limit) {
-            console.log('DONE');
-            done();
-            return;
-        }
-
-        // Directories are transversed in depth-first
-
-        var dirPath = dirList.pop();
-        console.log('DIR %s', dirPath);
-
-        $.ajax({
-            url: self.metadataUrlTemplate.expand({ path: dirPath }),
-            headers: self.headers,
-            success: function (dir) {
-                console.log('HASH %s - %s', dir.hash, dir.path);
-                // Directories are added for processing; files are stored.
-                dir.contents.forEach(function (item) {
-                    if (item.is_dir) {
-                        dirList.push(item.path);
-                    } else {
-                        self.addFile(item);
-                    }
-                });
-
-                self.loadFilesInternal(dirList, done, limit);
-            }
-        });
-    }
-
-    self.addFile = function (file) {
-        if (file.mime_type.startsWith('audio/mpeg') || file.mime_type == 'audio/wav') {
-            console.log('ADD %s', file.path);
-            self.files.push(file.path);
-        } else {
-            console.log('IGNORE %s due to mime-type %s', file.path, file.mime_type);
-        }
-    }
-
-    self.getRandomFileUrl = function (done) {
-        var idx = Math.floor(Math.random() * self.files.length);
-        var filePath = self.files[idx];
-        $.ajax({
-            url: self.mediaUrlTemplate.expand({ path: filePath }),
-            method: 'POST',
-            headers: self.headers,
-            success: function (file) {
-                done(file.url);
-            }
         });
     }
 }
