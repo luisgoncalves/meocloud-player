@@ -3,7 +3,11 @@ page('/player', player);
 page('/oauth/authorize', oAuthAuthorize);
 page('/oauth/error/:error', oAuthError);
 
-var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', '4722fde2-2f99-4118-9373-3270c572d003', window.location.origin);
+var client_id = window.location.origin.indexOf('localhost') === -1
+    ? '6abdf380-083a-453a-9e36-1b1528ab8255' // gh-pages
+    : '4722fde2-2f99-4118-9373-3270c572d003'; // dev
+
+var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', client_id, window.location.origin);
 
 $(page.start);
 
