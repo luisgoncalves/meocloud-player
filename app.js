@@ -62,9 +62,6 @@ function player() {
 
     $('#player audio').bind('ended', getAndPlayRandomFile);
     $('#next').click(getAndPlayRandomFile);
-    $('#refresh').click(function () {
-        fileManager.update(function () { });
-    });
 
     $('#player').show();
 
