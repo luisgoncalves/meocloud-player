@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title></title>
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script src="https://cdn.rawgit.com/visionmedia/page.js/master/page.js"></script>
+        <script src="URI.js"></script>
+        <script src="app.js"></script>
+    </head>
+    <body>
+        <div id="error" hidden="hidden">
+            <p>Application not authorized</p>
+        </div>
+        <div id="index" hidden="hidden">
+            <a href="oauth/authorize">Associate MEO Cloud</a>
+        </div>
+        <div id="player" hidden="hidden">
+            <audio autoplay controls>Your browser doesn't support the <em>audio</em> element</audio>
+            <div>
+                <button id="next" type="button">Next</button>
+                <button id="refresh" type="button">Refresh</button>
+            </div>
+        </div>
+    </body>
+</html>
