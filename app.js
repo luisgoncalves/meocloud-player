@@ -1,15 +1,23 @@
-﻿page('/', index);
+﻿page.base(window.location.pathname.slice(0, -1));
+
+page('/', index);
 page('/player', player);
 page('/oauth/authorize', oAuthAuthorize);
 page('/oauth/error/:error', oAuthError);
+page('/#:res', oAuthCallback);
 
-var client_id = window.location.origin.indexOf('localhost') === -1
-    ? '6abdf380-083a-453a-9e36-1b1528ab8255' // gh-pages
-    : '4722fde2-2f99-4118-9373-3270c572d003'; // dev
+var client_id = window.location.hostname == 'localhost'
+    ? '4722fde2-2f99-4118-9373-3270c572d003'  // dev
+    : '6abdf380-083a-453a-9e36-1b1528ab8255'; // gh-pages
 
-var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', client_id, window.location.origin);
+var oAuthFlow = new OAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', client_id, window.location.origin + window.location.pathname);
 
-$(page.start);
+$(function () {
+    page.start({
+        dispatch: true,
+        hashbang: true
+    });
+});
 
 //
 // Application actions
@@ -17,25 +25,16 @@ $(page.start);
 
 function index(ctx) {
 
-    // Check if this is an OAuth callback
-    var res = null;
-    if (ctx.hash) {
-        res = URI.parseQuery(ctx.hash);
-    } else if (window.location.search) {
-        // MEO Cloud has a bug and doesn't return errors on the URL fragment
-        res = URI.parseQuery(window.location.search);
-    }
-
-    if (res) {
-        oAuthFlow.processAuthzResponse(
-            res,
-            function () { page('/player'); },
-            function (err) { page('/oauth/error/' + err); }
-        );
+    // MEO Cloud has a bug and doesn't return errors on the URL fragment
+    // Assume this is a bogus OAuth callback
+    var url = new URI(window.location.href);
+    if (url.query()) {
+        url.hash(url.query());
+        url.query('');
+        window.location.href = url.toString();
         return;
     }
 
-    // Check if there's a valid token
     if (oAuthFlow.getToken()) {
         page('/player');
     } else {
@@ -48,6 +47,7 @@ function player() {
     var accessToken = oAuthFlow.getToken();
     if (!accessToken) {
         page('/');
+        return;
     }
 
     var fileManager = new FileMetadataManager(
@@ -84,8 +84,18 @@ function oAuthAuthorize() {
     window.location.href = authzRequest;
 }
 
+function oAuthCallback(ctx) {
+    oAuthFlow.processAuthzResponse(
+        URI.parseQuery(ctx.params.res),
+        function () { page('/player'); },
+        function (err) { page('/oauth/error/' + err); }
+    );
+}
+
 function oAuthError(ctx) {
-    console.log("oAuthError: " + ctx.params.error);
+    console.warn("oAuthError: " + ctx.params.error);
+    $('#index').show();
+    $('#error').show();
 }
 
 //
@@ -192,13 +202,13 @@ function FileMetadataManager(cloudClient) {
     }
 
     self.getRandomFileUrl = function (done) {
-        
+
         self.getRandomFile(function (file) {
             if (file.url && file.expires > Date.now()) {
                 done(file.url);
                 return;
             }
-            
+
             self.cloudClient.getFileUrl(
                 file.path,
                 function (data) {
@@ -210,7 +220,7 @@ function FileMetadataManager(cloudClient) {
         });
     }
 
-    self.getRandomFile = function(done){
+    self.getRandomFile = function (done) {
         var cnt = Math.floor(Math.random() * self.count);
         self.db
             .transaction(FilesStoreName)
