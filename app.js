@@ -66,8 +66,8 @@ function player() {
     $('#next').click(getAndPlayRandomFile);
     $('#delete').click(function () {
         if (window.confirm('Delete the current file?')) {
-            fileManager.deleteCurrentFile();
-            getAndPlayRandomFile();
+            $('#delete').prop('disabled', true);
+            fileManager.deleteCurrentFile(getAndPlayRandomFile);
         }
     });
 
@@ -245,16 +245,12 @@ function FileMetadataManager(cloudClient) {
             };
     }
 
-    self.deleteCurrentFile = function () {
-        var file = self.currentFile;
-        self.currentFile = null;
-
-        self.cloudClient.deleteFile(file.path, function () {
-            self.db
-                .transaction(FilesStoreName, 'readwrite')
-                .objectStore(FilesStoreName)
-                .delete(file.path)
-                .onsuccess = function () { console.info('REMOVE %s', file.path); };
+    self.deleteCurrentFile = function (done) {     
+        self.cloudClient.deleteFile(self.currentFile.path, function () {
+            self.update(function () {
+                self.currentFile = null;
+                done();
+            });
         });
     }
 
