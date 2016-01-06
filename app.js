@@ -55,13 +55,21 @@ function player() {
     );
 
     var getAndPlayRandomFile = function () {
+        $('#delete').prop('disabled', true);
         fileManager.getRandomFileUrl(function (fileUrl) {
             $('#player audio').attr('src', fileUrl);
+            $('#delete').prop('disabled', false);
         })
     };
 
     $('#player audio').bind('ended', getAndPlayRandomFile);
     $('#next').click(getAndPlayRandomFile);
+    $('#delete').click(function () {
+        if (window.confirm('Delete the current file?')) {
+            fileManager.deleteCurrentFile();
+            getAndPlayRandomFile();
+        }
+    });
 
     $('#player').show();
 
@@ -105,6 +113,7 @@ function FileMetadataManager(cloudClient) {
     self.cloudClient = cloudClient;
     self.db = null;
     self.count = null;
+    self.currentFile = null;
 
     self.update = function (done) {
         self.openDb(function () {
@@ -183,7 +192,7 @@ function FileMetadataManager(cloudClient) {
                 if (event.target.result) {
                     fileStore
                         .delete(item.path)
-                        .onsuccess = function () { console.info('REMOVE %s', item.path) };
+                        .onsuccess = function () { console.info('REMOVE %s', item.path); };
                 }
             };
     }
@@ -201,6 +210,8 @@ function FileMetadataManager(cloudClient) {
     self.getRandomFileUrl = function (done) {
 
         self.getRandomFile(function (file) {
+            self.currentFile = file;
+
             if (file.url && file.expires > Date.now()) {
                 done(file.url);
                 return;
@@ -232,6 +243,19 @@ function FileMetadataManager(cloudClient) {
                     done(cursor.value);
                 }
             };
+    }
+
+    self.deleteCurrentFile = function () {
+        var file = self.currentFile;
+        self.currentFile = null;
+
+        self.cloudClient.deleteFile(file.path, function () {
+            self.db
+                .transaction(FilesStoreName, 'readwrite')
+                .objectStore(FilesStoreName)
+                .delete(file.path)
+                .onsuccess = function () { console.info('REMOVE %s', file.path); };
+        });
     }
 
     const FilesStoreName = 'files';
@@ -356,6 +380,7 @@ function CloudClient(apiBaseAddress, accessToken) {
 
     self.deltaUrl = apiBaseAddress + '/Delta';
     self.mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud/{+path}');
+    self.deleteFileUrl = apiBaseAddress + '/Fileops/Delete';
     self.headers = { Authorization: 'Bearer ' + accessToken };
 
     // Checks for incoming changes since a given reference cursor.
@@ -398,6 +423,16 @@ function CloudClient(apiBaseAddress, accessToken) {
             url: self.mediaUrlTemplate.expand({ path: filePath }),
             method: 'POST',
             headers: self.headers,
+            success: done
+        });
+    }
+
+    self.deleteFile = function (filePath, done) {
+        $.ajax({
+            url: self.deleteFileUrl,
+            method: 'POST',
+            headers: self.headers,
+            data: { path: filePath, root: 'meocloud' },
             success: done
         });
     }
