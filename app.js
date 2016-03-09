@@ -381,7 +381,7 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 function cloudClient(apiBaseAddress, accessToken) {
 
     var deltaUrl = apiBaseAddress + '/Delta';
-    var mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud/{+path}');
+    var mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud{+path}');
     var deleteFileUrl = apiBaseAddress + '/Fileops/Delete';
     var headers = { Authorization: 'Bearer ' + accessToken };
 
