@@ -4,10 +4,42 @@
 
 var app = function () {
 
-    var client_id = window.location.hostname == 'localhost'
-        ? '4722fde2-2f99-4118-9373-3270c572d003'  // dev
-        : '6abdf380-083a-453a-9e36-1b1528ab8255'; // gh-pages
-    var oAuthFlow = oAuth2ImplicitFlow('https://meocloud.pt/oauth2/authorize', client_id, window.location.origin + window.location.pathname);
+    var meocloudConfig = {
+        authzEndpoint: 'https://meocloud.pt/oauth2/authorize',
+        apiBaseAddress: 'https://publicapi.meocloud.pt/1',
+        root: 'meocloud',
+        clientIds: {
+            dev: '4722fde2-2f99-4118-9373-3270c572d003',
+            pub: '6abdf380-083a-453a-9e36-1b1528ab8255'
+        }
+    };
+
+    var dropboxConfig = {
+        authzEndpoint: 'https://www.dropbox.com/1/oauth2/authorize',
+        apiBaseAddress: 'https://api.dropboxapi.com/1',
+        root: 'auto',
+        clientIds: {
+            dev: 'TODO',
+            pub: 'TODO'
+        }
+    };
+
+    var cloud = function (config) {
+        var clientId = window.location.hostname == 'localhost' ? config.clientIds.dev : config.clientIds.pub;
+        return {
+            oauth: oAuth2ImplicitFlow(config.authzEndpoint, clientId, window.location.origin + window.location.pathname),
+            getFileManager: function (accessToken) {
+                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, accessToken));
+            }
+        };
+    };
+
+    var clouds = {
+        meocloud: cloud(meocloudConfig),
+        dropbox: cloud(dropboxConfig),
+    };
+
+    var activeCloud = clouds.meocloud;
 
     var index = function () {
 
@@ -21,7 +53,7 @@ var app = function () {
             return;
         }
 
-        if (oAuthFlow.getToken()) {
+        if (activeCloud.oauth.getToken()) {
             page('/player');
         } else {
             $('#index').show();
@@ -29,12 +61,12 @@ var app = function () {
     };
 
     var oAuthAuthorize = function () {
-        var authzRequest = oAuthFlow.prepareAuthzRequest();
+        var authzRequest = activeCloud.oauth.prepareAuthzRequest();
         window.location.href = authzRequest;
     };
 
     var oAuthCallback = function (ctx) {
-        oAuthFlow.processAuthzResponse(
+        activeCloud.oauth.processAuthzResponse(
             URI.parseQuery(ctx.params.res),
             function () { page('/player'); },
             function (err) { page('/oauth/error/' + err); }
@@ -49,13 +81,13 @@ var app = function () {
 
     var player = function () {
 
-        var accessToken = oAuthFlow.getToken();
+        var accessToken = activeCloud.oauth.getToken();
         if (!accessToken) {
             page('/');
             return;
         }
 
-        var fileManager = fileMetadataManager(cloudClient('https://publicapi.meocloud.pt/1', accessToken));
+        var fileManager = activeCloud.getFileManager(accessToken);
 
         var getAndPlayRandomFile = function () {
             $('#delete').prop('disabled', true);
@@ -375,13 +407,13 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 };
 
 //
-// Cloud client
+// Cloud client (Dropbox compliant)
 //
 
-function cloudClient(apiBaseAddress, accessToken) {
+function cloudClient(apiBaseAddress, root, accessToken) {
 
     var deltaUrl = apiBaseAddress + '/Delta';
-    var mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/meocloud{+path}');
+    var mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/' + root + '{+path}');
     var deleteFileUrl = apiBaseAddress + '/Fileops/Delete';
     var headers = { Authorization: 'Bearer ' + accessToken };
 
@@ -437,7 +469,7 @@ function cloudClient(apiBaseAddress, accessToken) {
                 url: deleteFileUrl,
                 method: 'POST',
                 headers: headers,
-                data: { path: filePath, root: 'meocloud' },
+                data: { path: filePath, root: root },
                 success: done
             });
         }
