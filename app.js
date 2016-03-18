@@ -18,9 +18,10 @@ var app = function () {
     var dropboxConfig = {
         authzEndpoint: 'https://www.dropbox.com/1/oauth2/authorize',
         apiBaseAddress: 'https://api.dropboxapi.com/1',
+        adjustApiPath: function (p) { return p.toLowerCase(); },
         root: 'auto',
         clientIds: {
-            dev: 'TODO',
+            dev: '2uj0app9uetkerk',
             pub: 'TODO'
         },
         name: 'dropbox'
@@ -31,7 +32,7 @@ var app = function () {
         return {
             oauth: oAuth2ImplicitFlow(config.authzEndpoint, clientId, window.location.origin + window.location.pathname, config.name),
             getFileManager: function (accessToken) {
-                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, accessToken), config.name);
+                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, config.adjustApiPath || function (p) { return p; }, accessToken), config.name);
             }
         };
     };
@@ -42,6 +43,7 @@ var app = function () {
     };
 
     var activeCloud = clouds.meocloud;
+    //var activeCloud = clouds.dropbox;
 
     var index = function () {
 
@@ -111,14 +113,6 @@ var app = function () {
         $('#player').show();
 
         fileManager.update(getAndPlayRandomFile);
-
-        //$.ajax({
-        //    url: 'https://publicapi.meocloud.pt/1/Account/Info',
-        //    headers: { Authorization: 'Bearer ' + accessToken },
-        //    success: function (data) {
-        //        console.log(data);
-        //    }
-        //});
     };
 
     // Routes
@@ -149,7 +143,7 @@ $(app.start);
 function fileMetadataManager(cloudClient, cloudName) {
 
     var currentFile = null;
-    var count = null;
+    var count = 0;
     var db = null;
     const LastCursorKey = cloudName + '_last_cursor';
     const FilesStoreName = 'files';
@@ -225,6 +219,11 @@ function fileMetadataManager(cloudClient, cloudName) {
     };
 
     var getRandomFile = function (done) {
+
+        if (count === 0) {
+            return;
+        }
+
         var cnt = Math.floor(Math.random() * count);
         db
         .transaction(FilesStoreName)
@@ -384,26 +383,28 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri, storagePrefix)
 
             // Store token and expiration
 
-            if (!res.access_token || !res.expires_in) {
+            if (!res.access_token) {
                 error('invalid response');
                 return;
             }
 
             storage.setItem(TokenKey, res.access_token);
-            storage.setItem(ExpiresKey, Date.now() + res.expires_in * 1000);
+
+            if (res.expires_in) {
+                storage.setItem(ExpiresKey, Date.now() + res.expires_in * 1000);
+            }
 
             success();
         },
 
         getToken: function () {
             var token = storage.getItem(TokenKey);
-            var expires = storage.getItem(ExpiresKey);
-
-            if (!token || !expires) {
+            if (!token) {
                 return null;
             }
 
-            if (Number(expires) < Date.now()) {
+            var expires = storage.getItem(ExpiresKey);
+            if (expires && Number(expires) < Date.now()) {
                 return null;
             }
 
@@ -416,11 +417,11 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri, storagePrefix)
 // Cloud client (Dropbox compliant)
 //
 
-function cloudClient(apiBaseAddress, root, accessToken) {
+function cloudClient(apiBaseAddress, root, adjustApiPath, accessToken) {
 
-    var deltaUrl = apiBaseAddress + '/Delta';
-    var mediaUrlTemplate = new URITemplate(apiBaseAddress + '/Media/' + root + '{+path}');
-    var deleteFileUrl = apiBaseAddress + '/Fileops/Delete';
+    var deltaUrl = apiBaseAddress + adjustApiPath('/Delta');
+    var mediaUrlTemplate = new URITemplate(apiBaseAddress + adjustApiPath('/Media/') + root + '{+path}');
+    var deleteFileUrl = apiBaseAddress + adjustApiPath('/Fileops/Delete');
     var headers = { Authorization: 'Bearer ' + accessToken };
 
     // Checks for incoming changes since a given reference cursor.
@@ -433,6 +434,8 @@ function cloudClient(apiBaseAddress, root, accessToken) {
             url: deltaUrl,
             method: 'POST',
             headers: headers,
+            dataType: 'json',
+            jsonp: false,
             data: { cursor: cursor },
             success: function (data) {
 
@@ -454,6 +457,10 @@ function cloudClient(apiBaseAddress, root, accessToken) {
                 if (data.has_more) {
                     delta(data.cursor, callback);
                 }
+            },
+            error: function (xhr, status, error) {
+                console.error(status);
+                console.error(error);
             }
         });
     };
@@ -466,7 +473,12 @@ function cloudClient(apiBaseAddress, root, accessToken) {
                 url: mediaUrlTemplate.expand({ path: filePath }),
                 method: 'POST',
                 headers: headers,
-                success: done
+                dataType: 'json',
+                success: done,
+                error: function (xhr, status, error) {
+                    console.error(status);
+                    console.error(error);
+                }
             });
         },
 
