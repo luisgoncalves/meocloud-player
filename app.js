@@ -11,7 +11,8 @@ var app = function () {
         clientIds: {
             dev: '4722fde2-2f99-4118-9373-3270c572d003',
             pub: '6abdf380-083a-453a-9e36-1b1528ab8255'
-        }
+        },
+        name: 'meocloud'
     };
 
     var dropboxConfig = {
@@ -21,15 +22,16 @@ var app = function () {
         clientIds: {
             dev: 'TODO',
             pub: 'TODO'
-        }
+        },
+        name: 'dropbox'
     };
 
     var cloud = function (config) {
         var clientId = window.location.hostname == 'localhost' ? config.clientIds.dev : config.clientIds.pub;
         return {
-            oauth: oAuth2ImplicitFlow(config.authzEndpoint, clientId, window.location.origin + window.location.pathname),
+            oauth: oAuth2ImplicitFlow(config.authzEndpoint, clientId, window.location.origin + window.location.pathname, config.name),
             getFileManager: function (accessToken) {
-                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, accessToken));
+                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, accessToken), config.name);
             }
         };
     };
@@ -144,11 +146,12 @@ $(app.start);
 // Local file metadata manager
 //
 
-function fileMetadataManager(cloudClient) {
+function fileMetadataManager(cloudClient, cloudName) {
 
     var currentFile = null;
     var count = null;
     var db = null;
+    const LastCursorKey = cloudName + '_last_cursor';
     const FilesStoreName = 'files';
 
     // Database
@@ -159,7 +162,7 @@ function fileMetadataManager(cloudClient) {
             return;
         }
 
-        var request = window.indexedDB.open("Player", 1);
+        var request = window.indexedDB.open(cloudName, 1);
         request.onsuccess = function (event) {
             // Store the db object
             db = event.target.result;
@@ -247,7 +250,7 @@ function fileMetadataManager(cloudClient) {
             // DB requests will be triggered on this transaction. When it completes, all the requests have succeeded.
             transaction.oncomplete = function () {
                 // Store the last known cursor (this helps when something fails in large deltas)
-                window.localStorage.setItem('cloud_last_cursor', cursor);
+                window.localStorage.setItem(LastCursorKey, cursor);
                 // If this was the last delta, get an updated file count and invoke the callback
                 if (isCompleted) {
                     db
@@ -285,7 +288,7 @@ function fileMetadataManager(cloudClient) {
             // Get updates since the last known cursor
             console.log('UPDATE STARTED');
             cloudClient.delta(
-                window.localStorage.getItem('cloud_last_cursor'),
+                window.localStorage.getItem(LastCursorKey),
                 deltaProcessor(done)
             );
         });
@@ -327,9 +330,12 @@ function fileMetadataManager(cloudClient) {
 // OAuth 2.0 implicit flow logic
 //
 
-function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
+function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri, storagePrefix) {
 
     var storage = window.localStorage;
+    const StateKey = 'oauth_state';
+    const TokenKey = storagePrefix + '_oauth_token';
+    const ExpiresKey = storagePrefix + '_oauth_expires';
 
     var authzUrlTemplate = new URITemplate(authzEndpoint + '?response_type=token&client_id={client_id}&redirect_uri={redirect_uri}&state={state}');
 
@@ -346,7 +352,7 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
     return {
         prepareAuthzRequest: function () {
             var state = generateState();
-            storage.setItem('oauth_state', state);
+            storage.setItem(StateKey, state);
 
             var authzRequest = authzUrlTemplate.expand({
                 client_id: clientId,
@@ -364,8 +370,8 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
 
             // Check state
 
-            var state = storage.getItem('oauth_state');
-            storage.removeItem('oauth_state');
+            var state = storage.getItem(StateKey);
+            storage.removeItem(StateKey);
             if (!state || state !== res.state) {
                 error('missing or invalid state');
                 return;
@@ -383,17 +389,17 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri) {
                 return;
             }
 
-            storage.setItem('oauth_token', res.access_token);
-            storage.setItem('oauth_expires', Date.now() + res.expires_in * 1000);
+            storage.setItem(TokenKey, res.access_token);
+            storage.setItem(ExpiresKey, Date.now() + res.expires_in * 1000);
 
             success();
         },
 
         getToken: function () {
-            var expires = storage.getItem('oauth_expires');
-            var token = storage.getItem('oauth_token');
+            var token = storage.getItem(TokenKey);
+            var expires = storage.getItem(ExpiresKey);
 
-            if (!expires || !token) {
+            if (!token || !expires) {
                 return null;
             }
 
