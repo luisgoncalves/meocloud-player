@@ -5,7 +5,13 @@
         <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="https://cdn.rawgit.com/visionmedia/page.js/master/page.js"></script>
         <script src="URI.js"></script>
+        <script src="jsmediatags.min.js"></script>
         <script src="app.js"></script>
+        <style>
+            audio {
+                margin: 10px 0px 5px 0px;
+            }
+        </style>
     </head>
     <body>
         <div id="error" hidden="hidden">
@@ -15,7 +21,12 @@
             <a href="oauth/authorize">Associate MEO Cloud</a>
         </div>
         <div id="player" hidden="hidden">
+            
+            <div><span id="artist">Artist</span> - <span id="title">Title</span></div>
+            <div><small id="album">Album</small><small id="year"> (year)</small></div>
+
             <audio autoplay controls>Your browser doesn't support the <em>audio</em> element</audio>
+
             <div>
                 <button id="next" type="button">Next</button>
                 <button id="delete" type="button" disabled>Delete</button>

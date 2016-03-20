@@ -12,7 +12,8 @@ var app = function () {
             dev: '4722fde2-2f99-4118-9373-3270c572d003',
             pub: '6abdf380-083a-453a-9e36-1b1528ab8255'
         },
-        name: 'meocloud'
+        name: 'meocloud',
+        shouldReadTags: false
     };
 
     var dropboxConfig = {
@@ -24,7 +25,8 @@ var app = function () {
             dev: '2uj0app9uetkerk',
             pub: 'TODO'
         },
-        name: 'dropbox'
+        name: 'dropbox',
+        shouldReadTags: true
     };
 
     var cloud = function (config) {
@@ -32,7 +34,7 @@ var app = function () {
         return {
             oauth: oAuth2ImplicitFlow(config.authzEndpoint, clientId, window.location.origin + window.location.pathname, config.name),
             getFileManager: function (accessToken) {
-                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, config.adjustApiPath || function (p) { return p; }, accessToken), config.name);
+                return fileMetadataManager(cloudClient(config.apiBaseAddress, config.root, config.adjustApiPath || function (p) { return p; }, accessToken), config.name, config.shouldReadTags);
             }
         };
     };
@@ -95,10 +97,19 @@ var app = function () {
 
         var getAndPlayRandomFile = function () {
             $('#delete').prop('disabled', true);
-            fileManager.getRandomFileUrl(function (fileUrl) {
-                $('#player audio').attr('src', fileUrl);
-                $('#delete').prop('disabled', false);
-            })
+            fileManager.getRandomFileUrl(
+                function (fileUrl) {
+                    $('#player audio').attr('src', fileUrl);
+                    $('#delete').prop('disabled', false);
+                },
+                function (tags) {
+                    $('#artist').text(tags.artist || 'N/A');
+                    $('#title').text(tags.title || 'N/A');
+                    $('#album').text(tags.album || 'N/A');
+                    $('#year').text(tags.year ? ' (' + tags.year + ')' : '');
+                    //console.log(tags);
+                }
+            );
         };
 
         $('#player audio').bind('ended', getAndPlayRandomFile);
@@ -140,7 +151,7 @@ $(app.start);
 // Local file metadata manager
 //
 
-function fileMetadataManager(cloudClient, cloudName) {
+function fileMetadataManager(cloudClient, cloudName, shouldReadTags) {
 
     var currentFile = null;
     var count = 0;
@@ -177,7 +188,7 @@ function fileMetadataManager(cloudClient, cloudName) {
     var addFile = function (item, fileStore) {
         if (item.mime_type.startsWith('audio/mpeg') || item.mime_type == 'audio/wav' || item.path.endsWith('.mp3')) {
             fileStore
-                .put({ path: item.path, url: null, expires: null })
+                .put({ path: item.path, tags: null })
                 .onsuccess = function () { console.info('ADD %s', item.path); };
         } else {
             console.log('IGNORE %s due to mime-type %s', item.path, item.mime_type);
@@ -240,6 +251,42 @@ function fileMetadataManager(cloudClient, cloudName) {
         };
     };
 
+    var readTags = function (item, url, done) {
+
+        if (item.tags) {
+            done(item.tags);
+            return;
+        }
+
+        jsmediatags.read(url, {
+            onSuccess: function (res) {
+
+                tags = {
+                    artist: res.tags.artist,
+                    title: res.tags.title,
+                    album: res.tags.album,
+                    year: res.tags.year
+                };
+                done(tags);
+
+                // Store tags on DB if artist or title are known
+                if (tags.artist || tags.title) {
+                    item.tags = tags;
+                    db
+                    .transaction(FilesStoreName, 'readwrite')
+                    .objectStore(FilesStoreName)
+                    .put(item)
+                    .onsuccess = function () { console.debug('Updated tags for %s', item.path); };
+                }
+            },
+            onError: function (error) {
+                console.warn('Cannot read tags for %s', item.path);
+                console.warn(error);
+                done({});
+            }
+        });
+    };
+
     // Process updates from the cloud service (in batches)
 
     var deltaProcessor = function (done) {
@@ -295,22 +342,18 @@ function fileMetadataManager(cloudClient, cloudName) {
 
     return {
         update: update,
-        getRandomFileUrl: function (done) {
+        getRandomFileUrl: function (fileDone, tagsDone) {
             getRandomFile(function (file) {
                 currentFile = file;
-
-                if (file.url && file.expires > Date.now()) {
-                    done(file.url);
-                    return;
-                }
 
                 cloudClient.getFileUrl(
                     file.path,
                     function (data) {
-                        // TODO update file.url and file.expires
-                        file.url = data.url;
-                        file.expires = new Date(data.expires);
-                        done(file.url);
+                        fileDone(data.url);
+
+                        if (shouldReadTags) {
+                            readTags(file, data.url, tagsDone);
+                        }
                     });
             });
         },
