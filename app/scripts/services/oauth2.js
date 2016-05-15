@@ -14,27 +14,27 @@ angular.module('cloudPlayer.oauth2', [])
     })
 
     // OAuth 2.0 implicit flow logic
-    .factory('oAuth2ImplicitFlow', ['cloudConfig', 'base64url', function (cloudConfig, base64url) {
+    .factory('oAuth2ImplicitFlow', ['$window', 'cloudConfig', 'base64url', function ($window, cloudConfig, base64url) {
         return oAuth2ImplicitFlow(
             cloudConfig.authzEndpoint,
-            window.location.hostname == 'localhost' ? cloudConfig.clientIds.dev : cloudConfig.clientIds.pub, // TODO use $location
-            window.location.origin + window.location.pathname, // TODO use $location
-            base64url
+            $window.location.hostname === 'localhost' || $window.location.hostname === '127.0.0.1' ? cloudConfig.clientIds.dev : cloudConfig.clientIds.pub,
+            $window.location.origin + $window.location.pathname,
+            base64url,
+            $window.localStorage
         );
     }])
 
     ;
 
-function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri, base64url) {
+function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, storage) {
 
-    var storage = window.localStorage;
     var crypto = window.crypto;
     const StateKey = 'oauth_state';
 
     var authzUrlTemplate = new URITemplate(authzEndpoint + '?response_type=token&client_id={client_id}&redirect_uri={redirect_uri}&state={state}');
 
     return {
-        prepareAuthzRequest: function () {
+        prepareAuthzRequest: function (redirectUri) {
             var state = new Uint8Array(128 / 8);
             crypto.getRandomValues(state);
             state = base64url.encode(state);
@@ -42,37 +42,45 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, redirectUri, base64url) {
 
             var authzRequest = authzUrlTemplate.expand({
                 client_id: clientId,
-                redirect_uri: redirectUri,
+                redirect_uri: baseAddress + redirectUri,
                 state: state
             });
             return authzRequest;
         },
 
-        processAuthzResponse: function (res, success, error) {
+        processAuthzResponse: function (res) {
+
+            var error = function (e) {
+                return {
+                    success: false,
+                    error: e
+                };
+            };
+
             if (!res.state) {
-                error('invalid response');
-                return;
+                return error('invalid response');
             }
 
             // Check state
             var state = storage.getItem(StateKey);
             storage.removeItem(StateKey);
             if (!state || state !== res.state) {
-                error('missing or invalid state');
-                return;
+                return error('missing or invalid state');
             }
 
             if (res.error) {
-                error(res.error);
-                return;
+                return error(res.error);
             }
 
             if (!res.access_token) {
-                error('invalid response');
-                return;
+                return error('invalid response');
             }
 
-            success(res.access_token, res.expires_in);
+            return {
+                success: true,
+                accessToken: res.access_token,
+                expiresIn: res.expires_in
+            }
         }
     };
 };
