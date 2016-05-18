@@ -20,11 +20,9 @@ angular.module('cloudPlayer.oauth2', [])
             $window.location.hostname === 'localhost' || $window.location.hostname === '127.0.0.1' ? cloudConfig.clientIds.dev : cloudConfig.clientIds.pub,
             $window.location.origin + $window.location.pathname,
             base64url,
-            $window.localStorage
+            $window.sessionStorage
         );
-    }])
-
-    ;
+    }]);
 
 function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, storage) {
 

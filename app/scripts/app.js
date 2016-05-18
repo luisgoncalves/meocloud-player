@@ -18,6 +18,20 @@
         displayName: 'MEO Cloud',
         shouldReadTags: false
     };
+        
+    var dropboxConfig = {
+        authzEndpoint: 'https://www.dropbox.com/1/oauth2/authorize',
+        apiBaseAddress: 'https://api.dropboxapi.com/1',
+        adjustApiPath: function (p) { return p.toLowerCase(); },
+        root: 'auto',
+        clientIds: {
+            dev: '2uj0app9uetkerk',
+            pub: 'TODO'
+        },
+        name: 'dropbox',
+        displayName: 'Dropbox',
+        shouldReadTags: true
+    };
 
     app.constant('cloudConfig', meocloudConfig);
 
