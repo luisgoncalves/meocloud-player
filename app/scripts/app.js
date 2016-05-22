@@ -18,7 +18,7 @@
         displayName: 'MEO Cloud',
         shouldReadTags: false
     };
-        
+
     var dropboxConfig = {
         authzEndpoint: 'https://www.dropbox.com/1/oauth2/authorize',
         apiBaseAddress: 'https://api.dropboxapi.com/1',
@@ -54,4 +54,9 @@
                 redirectTo: '/'
             });
     }]);
+
+    app.run(function ($http, $httpParamSerializerJQLike) {
+        $http.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
+        $http.defaults.transformRequest.unshift($httpParamSerializerJQLike);
+    });
 })();

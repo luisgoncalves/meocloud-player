@@ -40,11 +40,23 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
             }
         }])
 
-    .controller('PlayerCtrl', ['$location', '$scope', 'fileManager', function ($location, $scope, fileManager) {
-        if (!fileManager.client.hasToken()) {
-            $location.path('/');
-            return;
-        }
-    }])
+    .controller('PlayerCtrl', ['$location', '$scope', 'cloudConfig', 'fileManager',
+        function ($location, $scope, cloudConfig, fileManager) {
+
+            $scope.showFileInfo = cloudConfig.shouldReadTags;
+            $scope.isPlaying = false;
+            $scope.next = function () {
+                console.log('NEXT!');
+            };
+
+            if (!fileManager.client.hasToken()) {
+                $location.path('/');
+                return;
+            }
+
+            fileManager.update().then(function () {
+                $scope.isPlaying = true;
+            });
+        }])
 
     ;

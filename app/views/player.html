@@ -1,1 +1,11 @@
-<div>Player</div>
+<div ng-show="showFileInfo">
+    <div><span>{{currentFile.artist}}</span> - <span>{{currentFile.title}}</span></div>
+    <div><small>{{currentFile.album}}</small><small> ({{currentFile.year}})</small></div>
+</div>
+
+<audio autoplay controls>Your browser doesn't support the <em>audio</em> element</audio>
+
+<div>
+    <button type="button" ng-click="next()" ng-disabled="!isPlaying">Next</button>
+    <button type="button" disabled>Delete</button>
+</div>

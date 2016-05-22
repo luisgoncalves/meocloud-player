@@ -30,24 +30,27 @@ angular.module('cloudPlayer.services', [])
                     var data = response.data;
                     var updatedItems = [];
                     var deletedPaths = [];
-                    data.entries.forEach(function (delta) {
-                        // delta => [path, metadata]
-                        var item = delta[1];
+                    data.entries.forEach(function (entry) {
+                        // entry => [path, metadata]
+                        var item = entry[1];
                         if (item != null) {
-                            item.path = delta[0]; // Easier for later comparisons (casing is diferent on 'path' and on 'metadata.path')
-                            updatedItems.push(delta[1]);
+                            item.path = entry[0]; // Easier for later comparisons (casing is diferent on 'path' and on 'metadata.path')
+                            updatedItems.push(entry[1]);
                         } else {
-                            deletedPaths.push(delta[0]);
+                            deletedPaths.push(entry[0]);
                         }
                     });
 
-                    // TODO rework this with promises
-                    callback(updatedItems, deletedPaths, data.cursor, !data.has_more);
+                    var promise = callback(updatedItems, deletedPaths, data.cursor);
 
                     if (data.has_more) {
-                        // When 'then' callbacks return a promise, it is chained.
-                        return delta(data.cursor, callback);
+                        promise = promise.then(function () {
+                            // When 'then' callbacks return a promise, it is chained.
+                            return delta(data.cursor, callback);
+                        });
                     }
+                    
+                    return promise;
                 });
         };
 
