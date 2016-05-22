@@ -160,7 +160,7 @@ angular.module('cloudPlayer.services')
         return {
             client: cloudClient,
             hasFiles: function () {
-                return count === 0;
+                return count !== 0;
             },
             update: update,
             getRandomFileUrl: function () {

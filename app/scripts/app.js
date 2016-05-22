@@ -3,6 +3,8 @@
     var app = angular.module('cloudPlayer', [
         'ngRoute',
         'cloudPlayer.controllers',
+        'cloudPlayer.filters',
+        'cloudPlayer.directives',
         'cloudPlayer.oauth2'
     ]);
 

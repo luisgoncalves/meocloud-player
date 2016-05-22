@@ -82,7 +82,7 @@ angular.module('cloudPlayer.services', [])
             deleteFile: function (filePath) {
                 return $http.post(
                     deleteFileUrl,
-                    { path: filePath, root: root },
+                    { path: filePath, root: cloudConfig.root },
                     { headers: headers });
             }
         };

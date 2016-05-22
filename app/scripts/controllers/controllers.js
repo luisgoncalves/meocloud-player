@@ -43,20 +43,57 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
     .controller('PlayerCtrl', ['$location', '$scope', 'cloudConfig', 'fileManager',
         function ($location, $scope, cloudConfig, fileManager) {
 
-            $scope.showFileInfo = cloudConfig.shouldReadTags;
-            $scope.isPlaying = false;
-            $scope.next = function () {
-                console.log('NEXT!');
+            var emptyFile = {
+                artist: 'Artist',
+                title: 'Title',
+                album: 'Album',
+                year: 'year',
+                url: '',
             };
+
+            $scope.showFileInfo = cloudConfig.shouldReadTags;
+            $scope.currentFile = emptyFile;
+            $scope.canPlay = false;
+            $scope.canDelete = false;
 
             if (!fileManager.client.hasToken()) {
                 $location.path('/');
                 return;
             }
 
-            fileManager.update().then(function () {
-                $scope.isPlaying = true;
-            });
+            $scope.next = function () {
+                $scope.canDelete = false;
+                return fileManager.getRandomFileUrl().then(function (fileUrl) {
+                    $scope.currentFile = {
+                        url: fileUrl
+                    };
+                    $scope.canDelete = true;
+                })
+            };
+
+            $scope.deleteCurrent = function () {
+
+                $scope.canPlay = false;
+                $scope.canDelete = false;
+                $scope.currentFile = emptyFile;
+
+                fileManager.deleteCurrentFile().then(function () {
+                    if (fileManager.hasFiles()) {
+                        $scope.next().then(function () {
+                            $scope.canPlay = true;
+                        });
+                    }
+                });
+            };
+
+            fileManager.update()
+                .then(function () {
+                    if (fileManager.hasFiles()) {
+                        $scope.next().then(function () {
+                            $scope.canPlay = true;
+                        });
+                    }
+                });
         }])
 
     ;
