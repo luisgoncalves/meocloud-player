@@ -3,7 +3,7 @@
     <div><small>{{currentFile.album}}</small><small> ({{currentFile.year}})</small></div>
 </div>
 
-<audio autoplay controls ng-src="{{currentFile.url | trustedUrl}}">
+<audio autoplay controls ng-src="{{currentFile.url | trustedUrl}}" cp-bind="ended" cp-bind-handler="next()">
     Your browser doesn't support the <em>audio</em> element
 </audio>
 
