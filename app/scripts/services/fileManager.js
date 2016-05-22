@@ -79,13 +79,9 @@ angular.module('cloudPlayer.services')
             };
         };
 
-        var getRandomFile = function (done) {
+        var getRandomFile = function () {
 
-            // TODO check this
-            if (count === 0) {
-                return;
-            }
-
+            var deferred = $q.defer();
             var cnt = Math.floor(Math.random() * count);
             db
                 .transaction(FilesStoreName)
@@ -97,9 +93,10 @@ angular.module('cloudPlayer.services')
                         cursor.advance(cnt);
                         cnt = -1;
                     } else {
-                        done(cursor.value);
+                        deferred.resolve(cursor.value);
                     }
                 };
+            return deferred.promise;
         };
 
         // Process updates from the cloud service (in batches). Returns a promise.
@@ -138,30 +135,51 @@ angular.module('cloudPlayer.services')
 
         // Public API
 
+        var update = function () {
+            return $q(function (resolve) {
+                openDb(function () {
+                    // Get updates since the last known cursor
+                    console.log('UPDATE STARTED');
+                    cloudClient
+                        .delta($window.localStorage.getItem(LastCursorKey), deltaProcessor)
+                        .then(function () {
+                            // Get an updated file count
+                            db.transaction(FilesStoreName)
+                                .objectStore(FilesStoreName)
+                                .count()
+                                .onsuccess = function (event) {
+                                    count = event.target.result;
+                                    console.info('UPDATE COMPLETED Total files: %d', count);
+                                    resolve();
+                                };
+                        });
+                });
+            });
+        };
+
         return {
             client: cloudClient,
-            update: function () {
-                return $q(function (resolve) {
-                    openDb(function () {
-                        // Get updates since the last known cursor
-                        console.log('UPDATE STARTED');
-                        cloudClient
-                            .delta($window.localStorage.getItem(LastCursorKey), deltaProcessor)
-                            .then(function () {
-                                // Get an updated file count
-                                db.transaction(FilesStoreName)
-                                    .objectStore(FilesStoreName)
-                                    .count()
-                                    .onsuccess = function (event) {
-                                        count = event.target.result;
-                                        console.info('UPDATE COMPLETED Total files: %d', count);
-                                        resolve();
-                                    };
-                            });
-                    });
-                });
+            hasFiles: function () {
+                return count === 0;
             },
-            getRandomFileUrl: null,
-            deleteCurrentFile: null
+            update: update,
+            getRandomFileUrl: function () {
+                return getRandomFile()
+                    .then(function (file) {
+                        currentFile = file;
+                        return cloudClient.getFileUrl(file.path);
+                    })
+                    .then(function (data) {
+                        return data.url;
+                    });
+            },
+            deleteCurrentFile: function () {
+                return cloudClient
+                    .deleteFile(currentFile.path)
+                    .then(function () {
+                        currentFile = null;
+                        return update();
+                    });
+            }
         };
     }]);

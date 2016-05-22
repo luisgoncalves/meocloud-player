@@ -49,7 +49,7 @@ angular.module('cloudPlayer.services', [])
                             return delta(data.cursor, callback);
                         });
                     }
-                    
+
                     return promise;
                 });
         };
@@ -73,6 +73,8 @@ angular.module('cloudPlayer.services', [])
                     method: 'POST',
                     url: mediaUrlTemplate.expand({ path: filePath }),
                     headers: headers
+                }).then(function (response) {
+                    return response.data;
                 });
             },
 
