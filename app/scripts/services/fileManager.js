@@ -99,6 +99,47 @@ angular.module('cloudPlayer.services')
             return deferred.promise;
         };
 
+        var readTags = function (item, url) {
+
+            var deferred = $q.defer();
+
+            if (item.tags) {
+                deferred.resolve(item.tags);
+                return deferred.promise;
+            }
+
+            jsmediatags.read(url, {
+                onSuccess: function (res) {
+
+                    var tags = {
+                        artist: res.tags.artist,
+                        title: res.tags.title,
+                        album: res.tags.album,
+                        year: res.tags.year
+                    };
+
+                    // Store tags on DB if artist or title are known
+                    if (tags.artist || tags.title) {
+                        item.tags = tags;
+                        db
+                            .transaction(FilesStoreName, 'readwrite')
+                            .objectStore(FilesStoreName)
+                            .put(item)
+                            .onsuccess = function () { console.debug('Updated tags for %s', item.path); };
+                    }
+
+                    deferred.resolve(tags);
+                },
+                onError: function (error) {
+                    console.warn('Cannot read tags for %s', item.path);
+                    console.warn(error);
+                    deferred.resolve({});
+                }
+            });
+
+            return deferred.promise;
+        };
+
         // Process updates from the cloud service (in batches). Returns a promise.
 
         var deltaProcessor = function (updatedItems, deletedPaths, cursor) {
@@ -163,15 +204,23 @@ angular.module('cloudPlayer.services')
                 return count !== 0;
             },
             update: update,
-            getRandomFileUrl: function () {
-                return getRandomFile()
-                    .then(function (file) {
-                        currentFile = file;
-                        return cloudClient.getFileUrl(file.path);
-                    })
-                    .then(function (data) {
-                        return data.url;
+            getRandomFileData: function () {
+                return getRandomFile().then(function (file) {
+                    currentFile = file;
+                    return cloudClient.getFileUrl(file.path).then(function (fileData) {
+                        var res = {
+                            url: fileData.url
+                        };
+
+                        if (cloudConfig.shouldReadTags) {
+                            res.readTags = function () {
+                                return readTags(file, fileData.url);
+                            };
+                        }
+
+                        return res;
                     });
+                });
             },
             deleteCurrentFile: function () {
                 return cloudClient

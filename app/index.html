@@ -1,27 +1,32 @@
 ﻿<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-        <title>Cloud Player</title>
-        <script src="scripts/vendor/URI.js"></script>
-        <!--<script src="jsmediatags.min.js"></script>-->
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
-        <script src="https://code.angularjs.org/1.5.5/angular-route.min.js"></script>
-        
-        <script src="scripts/services/oauth2.js"></script>
-        <script src="scripts/services/cloudClient.js"></script>
-        <script src="scripts/services/fileManager.js"></script>
-        <script src="scripts/controllers/controllers.js"></script>
-        <script src="scripts/filters/filters.js"></script>
-        <script src="scripts/directives/directives.js"></script>
-        <script src="scripts/app.js"></script>
-        
-        <style>
-            audio {
-                margin: 10px 0px 5px 0px;
-            }
-        </style>
-    </head>
-    <body ng-app="cloudPlayer">
-        <div ng-view></div>
-    </body>
+
+<head>
+    <title>Cloud Player</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
+    <script src="https://code.angularjs.org/1.5.5/angular-route.min.js"></script>
+
+    <script src="scripts/vendor/URI.js"></script>
+    <script src="scripts/vendor/jsmediatags.min.js"></script>
+
+    <script src="scripts/services/oauth2.js"></script>
+    <script src="scripts/services/cloudClient.js"></script>
+    <script src="scripts/services/fileManager.js"></script>
+    <script src="scripts/controllers/controllers.js"></script>
+    <script src="scripts/filters/filters.js"></script>
+    <script src="scripts/directives/directives.js"></script>
+    <script src="scripts/app.js"></script>
+
+    <style>
+        audio {
+            margin: 10px 0px 5px 0px;
+        }
+    </style>
+</head>
+
+<body ng-app="cloudPlayer">
+    <div ng-view></div>
+</body>
+
 </html>

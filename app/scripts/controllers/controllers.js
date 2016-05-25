@@ -43,16 +43,18 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
     .controller('PlayerCtrl', ['$location', '$scope', 'cloudConfig', 'fileManager',
         function ($location, $scope, cloudConfig, fileManager) {
 
-            var emptyFile = {
-                artist: 'Artist',
-                title: 'Title',
-                album: 'Album',
-                year: 'year',
-                url: '',
+            var emptyFile = function (url) {
+                return {
+                    artist: 'Artist',
+                    title: 'Title',
+                    album: 'Album',
+                    year: 'year',
+                    url: url,
+                }
             };
 
             $scope.showFileInfo = cloudConfig.shouldReadTags;
-            $scope.currentFile = emptyFile;
+            $scope.currentFile = emptyFile();
             $scope.canPlay = false;
             $scope.canDelete = false;
 
@@ -63,11 +65,18 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
 
             $scope.next = function () {
                 $scope.canDelete = false;
-                return fileManager.getRandomFileUrl().then(function (fileUrl) {
-                    $scope.currentFile = {
-                        url: fileUrl
-                    };
+                return fileManager.getRandomFileData().then(function (data) {
+                    $scope.currentFile = emptyFile(data.url);
                     $scope.canDelete = true;
+
+                    if (cloudConfig.shouldReadTags && data.readTags) {
+                        data.readTags().then(function (tags) {
+                            $scope.currentFile.artist = tags.artist || 'N/A';
+                            $scope.currentFile.title = tags.title || 'N/A';
+                            $scope.currentFile.album = tags.album || 'N/A';
+                            $scope.currentFile.year = tags.year || 'N/A';
+                        });
+                    }
                 })
             };
 
