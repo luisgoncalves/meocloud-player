@@ -49,7 +49,7 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
                     title: 'Title',
                     album: 'Album',
                     year: 'year',
-                    url: url,
+                    url: url
                 }
             };
 

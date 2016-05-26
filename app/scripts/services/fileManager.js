@@ -6,13 +6,13 @@ angular.module('cloudPlayer.services')
         var currentFile = null;
         var count = 0;
         var db = null;
-        const LastCursorKey = cloudConfig.name + '_last_cursor';
-        const FilesStoreName = 'files';
+        var lastCursorKey = cloudConfig.name + '_last_cursor';
+        var filesStoreName = 'files';
 
         // Database actions
 
         var openDb = function (done) {
-            if (db != null) {
+            if (db !== null) {
                 done();
                 return;
             }
@@ -23,25 +23,25 @@ angular.module('cloudPlayer.services')
                 db = event.target.result;
                 // Generic error handler
                 db.onerror = function (errorEvent) {
-                    console.error("Database error: " + errorEvent.target.errorCode);
+                    $window.console.error("Database error: " + errorEvent.target.errorCode);
                 };
                 done();
             };
             request.onupgradeneeded = function (event) {
                 // This is invoked before the 'onsuccess' event, if any changes are needed
                 var db = event.target.result;
-                console.log('Creating files object store');
-                db.createObjectStore(FilesStoreName, { keyPath: "path" });
+                $window.console.log('Creating files object store');
+                db.createObjectStore(filesStoreName, { keyPath: "path" });
             }
         };
 
         var addFile = function (item, fileStore) {
-            if (item.mime_type.startsWith('audio/mpeg') || item.mime_type == 'audio/wav' || item.path.endsWith('.mp3')) {
+            if (item.mime_type.startsWith('audio/mpeg') || item.mime_type === 'audio/wav' || item.path.endsWith('.mp3')) {
                 fileStore
                     .put({ path: item.path, tags: null })
-                    .onsuccess = function () { console.info('ADD %s', item.path); };
+                    .onsuccess = function () { $window.console.info('ADD %s', item.path); };
             } else {
-                console.log('IGNORE %s due to mime-type %s', item.path, item.mime_type);
+                $window.console.log('IGNORE %s due to mime-type %s', item.path, item.mime_type);
             }
         };
 
@@ -53,14 +53,14 @@ angular.module('cloudPlayer.services')
                     if (event.target.result) {
                         fileStore
                             .delete(item.path)
-                            .onsuccess = function () { console.info('REMOVE %s', item.path); };
+                            .onsuccess = function () { $window.console.info('REMOVE %s', item.path); };
                     }
                 };
         };
 
         var purgefiles = function (deletedPaths, fileStore) {
-            console.log('Paths were deleted:');
-            console.log(deletedPaths);
+            $window.console.log('Paths were deleted:');
+            $window.console.log(deletedPaths);
 
             // Iterate the existing files and remove the deleted paths and all their children
             fileStore.openCursor().onsuccess = function (event) {
@@ -69,7 +69,7 @@ angular.module('cloudPlayer.services')
                     // Check if the current file is a child of the deleted paths (or one of them)
                     if (deletedPaths.some(function (v) { return cursor.key.startsWith(v); })) {
                         cursor.delete().onsuccess = function () {
-                            console.info('REMOVE %s', cursor.key);
+                            $window.console.info('REMOVE %s', cursor.key);
                             cursor.continue();
                         };
                     } else {
@@ -84,8 +84,8 @@ angular.module('cloudPlayer.services')
             var deferred = $q.defer();
             var cnt = Math.floor(Math.random() * count);
             db
-                .transaction(FilesStoreName)
-                .objectStore(FilesStoreName)
+                .transaction(filesStoreName)
+                .objectStore(filesStoreName)
                 .openCursor()
                 .onsuccess = function (event) {
                     var cursor = event.target.result;
@@ -122,17 +122,17 @@ angular.module('cloudPlayer.services')
                     if (tags.artist || tags.title) {
                         item.tags = tags;
                         db
-                            .transaction(FilesStoreName, 'readwrite')
-                            .objectStore(FilesStoreName)
+                            .transaction(filesStoreName, 'readwrite')
+                            .objectStore(filesStoreName)
                             .put(item)
-                            .onsuccess = function () { console.debug('Updated tags for %s', item.path); };
+                            .onsuccess = function () { $window.console.debug('Updated tags for %s', item.path); };
                     }
 
                     deferred.resolve(tags);
                 },
                 onError: function (error) {
-                    console.warn('Cannot read tags for %s', item.path);
-                    console.warn(error);
+                    $window.console.warn('Cannot read tags for %s', item.path);
+                    $window.console.warn(error);
                     deferred.resolve({});
                 }
             });
@@ -146,18 +146,18 @@ angular.module('cloudPlayer.services')
 
             var deferred = $q.defer();
 
-            var transaction = db.transaction(FilesStoreName, 'readwrite');
+            var transaction = db.transaction(filesStoreName, 'readwrite');
             // DB requests will be triggered on this transaction. When it completes, all the requests have succeeded.
             transaction.oncomplete = function () {
                 // Store the last known cursor (this helps when something fails in large deltas)
-                $window.localStorage.setItem(LastCursorKey, cursor);
+                $window.localStorage.setItem(lastCursorKey, cursor);
                 deferred.resolve();
             };
             transaction.onerror = function () {
                 deferred.reject();
             };
 
-            var fileStore = transaction.objectStore(FilesStoreName);
+            var fileStore = transaction.objectStore(filesStoreName);
 
             if (deletedPaths.length > 0) {
                 purgefiles(deletedPaths, fileStore);
@@ -180,17 +180,17 @@ angular.module('cloudPlayer.services')
             return $q(function (resolve) {
                 openDb(function () {
                     // Get updates since the last known cursor
-                    console.log('UPDATE STARTED');
+                    $window.console.log('UPDATE STARTED');
                     cloudClient
-                        .delta($window.localStorage.getItem(LastCursorKey), deltaProcessor)
+                        .delta($window.localStorage.getItem(lastCursorKey), deltaProcessor)
                         .then(function () {
                             // Get an updated file count
-                            db.transaction(FilesStoreName)
-                                .objectStore(FilesStoreName)
+                            db.transaction(filesStoreName)
+                                .objectStore(filesStoreName)
                                 .count()
                                 .onsuccess = function (event) {
                                     count = event.target.result;
-                                    console.info('UPDATE COMPLETED Total files: %d', count);
+                                    $window.console.info('UPDATE COMPLETED Total files: %d', count);
                                     resolve();
                                 };
                         });

@@ -20,14 +20,13 @@ angular.module('cloudPlayer.oauth2', [])
             $window.location.hostname === 'localhost' || $window.location.hostname === '127.0.0.1' ? cloudConfig.clientIds.dev : cloudConfig.clientIds.pub,
             $window.location.origin + $window.location.pathname,
             base64url,
-            $window.sessionStorage
-        );
+            $window.sessionStorage,
+            $window.crypto);
     }]);
 
-function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, storage) {
+function oAuth2ImplicitFlow (authzEndpoint, clientId, baseAddress, base64url, storage, crypto) {
 
-    var crypto = window.crypto;
-    const StateKey = 'oauth_state';
+    var stateKey = 'oauth_state';
 
     var authzUrlTemplate = new URITemplate(authzEndpoint + '?response_type=token&client_id={client_id}&redirect_uri={redirect_uri}&state={state}');
 
@@ -36,11 +35,11 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, sto
             var state = new Uint8Array(128 / 8);
             crypto.getRandomValues(state);
             state = base64url.encode(state);
-            storage.setItem(StateKey, state);
+            storage.setItem(stateKey, state);
 
             var authzRequest = authzUrlTemplate.expand({
-                client_id: clientId,
-                redirect_uri: baseAddress + redirectUri,
+                'client_id': clientId,
+                'redirect_uri': baseAddress + redirectUri,
                 state: state
             });
             return authzRequest;
@@ -60,8 +59,8 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, sto
             }
 
             // Check state
-            var state = storage.getItem(StateKey);
-            storage.removeItem(StateKey);
+            var state = storage.getItem(stateKey);
+            storage.removeItem(stateKey);
             if (!state || state !== res.state) {
                 return error('missing or invalid state');
             }
@@ -81,4 +80,4 @@ function oAuth2ImplicitFlow(authzEndpoint, clientId, baseAddress, base64url, sto
             }
         }
     };
-};
+}

@@ -14,11 +14,11 @@ angular.module('cloudPlayer.services', [])
         };
 
         var storage = $window.localStorage;
-        const TokenKey = cloudConfig.name + '_oauth_token';
+        var tokenKey = cloudConfig.name + '_oauth_token';
         var token = null;
 
         var getToken = function () {
-            token = token || storage.getItem(TokenKey);
+            token = token || storage.getItem(tokenKey);
             return token;
         };
 
@@ -33,7 +33,7 @@ angular.module('cloudPlayer.services', [])
                     data.entries.forEach(function (entry) {
                         // entry => [path, metadata]
                         var item = entry[1];
-                        if (item != null) {
+                        if (item !== null) {
                             item.path = entry[0]; // Easier for later comparisons (casing is diferent on 'path' and on 'metadata.path')
                             updatedItems.push(entry[1]);
                         } else {
@@ -60,7 +60,7 @@ angular.module('cloudPlayer.services', [])
                 return getToken() !== null;
             },
             setToken: function (accessToken) {
-                storage.setItem(TokenKey, accessToken);
+                storage.setItem(tokenKey, accessToken);
                 token = null;
             },
 
