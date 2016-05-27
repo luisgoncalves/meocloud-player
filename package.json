@@ -8,11 +8,17 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "del": "^2.2.0",
     "gulp": "^3.9.1",
     "gulp-eslint": "^2.0.0",
-    "http-server": "^0.9.0"
+    "gulp-flatten": "^0.2.0",
+    "gulp-ignore": "^2.0.1",
+    "gulp-inject": "^4.1.0",
+    "http-server": "^0.9.0",
+    "stream-series": "^0.1.1"
   },
   "scripts": {
+    "prestart": "gulp",
     "start": "http-server -a 0.0.0.0 -p 8080 ./app",
     "test": "echo \"Error: no test specified\" && exit 1"
   }

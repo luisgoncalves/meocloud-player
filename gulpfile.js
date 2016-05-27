@@ -3,8 +3,13 @@
 
 var gulp = require('gulp');
 var eslint = require('gulp-eslint');
+var ignore = require('gulp-ignore');
+//var flatten = require('gulp-flatten');
+var inject = require('gulp-inject');
+var series = require('stream-series');
+//var del = require('del');
 
-gulp.task('default', function () {
+var appScripts = function () {
     return gulp.src(['app/scripts/**/*.js', '!app/scripts/vendor/*.js', 'gulpfile.js'])
         .pipe(eslint({
             extends: 'eslint:recommended',
@@ -37,5 +42,36 @@ gulp.task('default', function () {
             }
         }))
         .pipe(eslint.format())
-        .pipe(eslint.failAfterError());
+        .pipe(eslint.failAfterError())
+        .pipe(ignore.exclude('gulpfile.js'));
+};
+
+var vendorScripts = function () {
+    return gulp.src('app/scripts/vendor/*.js');
+};
+
+// gulp.task('clean', function () {
+//     return del(['dist/js']);
+// });
+
+// gulp.task('main', function () {
+//     var scripts = series(vendorScripts(), appScripts().pipe(flatten()))
+//         .pipe(gulp.dest('dist/js'));
+
+//     return gulp.src('app/index.html')
+//         .pipe(inject(scripts, { ignorePath: 'dist', removeTags: true }))
+//         .pipe(gulp.dest('dist'));
+// });
+
+// gulp.task('assets', function () {
+//     return gulp.src(['app/**/*.html', 'app/*.png'])
+//         .pipe(gulp.dest('dist'));
+// });
+
+gulp.task('default', function () {
+    //gulp.start('assets', 'main');
+    var scripts = series(vendorScripts(), appScripts());
+    return gulp.src('app/index.html')
+        .pipe(inject(scripts, { relative: true }))
+        .pipe(gulp.dest('app'));
 });
