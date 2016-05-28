@@ -2,8 +2,8 @@
 
 angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.services'])
 
-    .controller('HomeCtrl', ['$window', '$location', 'cloudConfig',
-        function ($window, $location, cloudConfig) {
+    .controller('HomeCtrl', ['$window', '$location', 'cloudConfig', 'fileManager',
+        function ($window, $location, cloudConfig, fileManager) {
 
             this.cloudName = cloudConfig.displayName;
 
@@ -21,8 +21,11 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
                 $window.location.href = url.toString();
                 return;
             }
-            
-            $location.url('/player');
+
+            if (fileManager.client.hasToken()) {
+                $location.path('/player');
+                return;
+            }
         }])
 
     .controller('OAuthCtrl', ['$window', '$location', '$routeParams', 'oAuth2ImplicitFlow', 'cloudClient',
