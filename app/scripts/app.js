@@ -5,7 +5,8 @@
         'cloudPlayer.controllers',
         'cloudPlayer.filters',
         'cloudPlayer.directives',
-        'cloudPlayer.oauth2'
+        'cloudPlayer.oauth2',
+        'cfp.hotkeys'
     ]);
 
     var meocloudConfig = {
