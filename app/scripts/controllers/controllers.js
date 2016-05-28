@@ -2,10 +2,10 @@
 
 angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.services'])
 
-    .controller('HomeCtrl', ['$window', '$location', '$scope', 'cloudConfig',
-        function ($window, $location, $scope, cloudConfig) {
+    .controller('HomeCtrl', ['$window', '$location', 'cloudConfig',
+        function ($window, $location, cloudConfig) {
 
-            $scope.cloudName = cloudConfig.displayName;
+            this.cloudName = cloudConfig.displayName;
 
             // OAuth callbacks are delivered on the root; route accordingly if needed.
             if ($location.hash()) {
@@ -21,10 +21,12 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
                 $window.location.href = url.toString();
                 return;
             }
+            
+            $location.url('/player');
         }])
 
-    .controller('OAuthCtrl', ['$window', '$location', '$routeParams', '$scope', 'oAuth2ImplicitFlow', 'cloudClient',
-        function ($window, $location, $routeParams, $scope, oAuth2ImplicitFlow, cloudClient) {
+    .controller('OAuthCtrl', ['$window', '$location', '$routeParams', 'oAuth2ImplicitFlow', 'cloudClient',
+        function ($window, $location, $routeParams, oAuth2ImplicitFlow, cloudClient) {
 
             if ($routeParams.mode === 'authorize') {
                 $window.location.href = oAuth2ImplicitFlow.prepareAuthzRequest('');
@@ -34,14 +36,14 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
                     cloudClient.setToken(res.accessToken);
                     $location.url('/player');
                 } else {
-                    $scope.hasError = true;
-                    $scope.error = res.error;
+                    this.hasError = true;
+                    this.error = res.error;
                 }
             }
         }])
 
-    .controller('PlayerCtrl', ['$location', '$scope', 'cloudConfig', 'fileManager',
-        function ($location, $scope, cloudConfig, fileManager) {
+    .controller('PlayerCtrl', ['$location', 'cloudConfig', 'fileManager',
+        function ($location, cloudConfig, fileManager) {
 
             var emptyFile = function (url) {
                 return {
@@ -53,43 +55,45 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
                 }
             };
 
-            $scope.showFileInfo = cloudConfig.shouldReadTags;
-            $scope.currentFile = emptyFile();
-            $scope.canPlay = false;
-            $scope.canDelete = false;
+            var ctrl = this;
+
+            ctrl.showFileInfo = cloudConfig.shouldReadTags;
+            ctrl.currentFile = emptyFile();
+            ctrl.canPlay = false;
+            ctrl.canDelete = false;
 
             if (!fileManager.client.hasToken()) {
                 $location.path('/');
                 return;
             }
 
-            $scope.next = function () {
-                $scope.canDelete = false;
+            ctrl.next = function () {
+                ctrl.canDelete = false;
                 return fileManager.getRandomFileData().then(function (data) {
-                    $scope.currentFile = emptyFile(data.url);
-                    $scope.canDelete = true;
+                    ctrl.currentFile = emptyFile(data.url);
+                    ctrl.canDelete = true;
 
                     if (cloudConfig.shouldReadTags && data.readTags) {
                         data.readTags().then(function (tags) {
-                            $scope.currentFile.artist = tags.artist || 'N/A';
-                            $scope.currentFile.title = tags.title || 'N/A';
-                            $scope.currentFile.album = tags.album || 'N/A';
-                            $scope.currentFile.year = tags.year || 'N/A';
+                            ctrl.currentFile.artist = tags.artist || 'N/A';
+                            ctrl.currentFile.title = tags.title || 'N/A';
+                            ctrl.currentFile.album = tags.album || 'N/A';
+                            ctrl.currentFile.year = tags.year || 'N/A';
                         });
                     }
                 })
             };
 
-            $scope.deleteCurrent = function () {
+            ctrl.deleteCurrent = function () {
 
-                $scope.canPlay = false;
-                $scope.canDelete = false;
-                $scope.currentFile = emptyFile;
+                ctrl.canPlay = false;
+                ctrl.canDelete = false;
+                ctrl.currentFile = emptyFile;
 
                 fileManager.deleteCurrentFile().then(function () {
                     if (fileManager.hasFiles()) {
-                        $scope.next().then(function () {
-                            $scope.canPlay = true;
+                        ctrl.next().then(function () {
+                            ctrl.canPlay = true;
                         });
                     }
                 });
@@ -98,8 +102,8 @@ angular.module('cloudPlayer.controllers', ['cloudPlayer.oauth2', 'cloudPlayer.se
             fileManager.update()
                 .then(function () {
                     if (fileManager.hasFiles()) {
-                        $scope.next().then(function () {
-                            $scope.canPlay = true;
+                        ctrl.next().then(function () {
+                            ctrl.canPlay = true;
                         });
                     }
                 });

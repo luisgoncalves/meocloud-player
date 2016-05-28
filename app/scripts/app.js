@@ -42,14 +42,17 @@
         $routeProvider
             .when('/', {
                 controller: 'HomeCtrl',
+                controllerAs: 'home',
                 templateUrl: 'views/home.html'
             })
             .when('/oauth/:mode', {
                 controller: 'OAuthCtrl',
+                controllerAs: 'oauth',
                 templateUrl: 'views/oauth.html'
             })
             .when('/player', {
                 controller: 'PlayerCtrl',
+                controllerAs: 'player',
                 templateUrl: 'views/player.html'
             })
             .otherwise({
