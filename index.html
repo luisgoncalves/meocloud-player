@@ -1,25 +1,25 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-        <title></title>
-        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-        <script src="https://cdn.rawgit.com/visionmedia/page.js/master/page.js"></script>
-        <script src="URI.js"></script>
-        <script src="app.js"></script>
-    </head>
-    <body>
-        <div id="error" hidden="hidden">
-            <p>Application not authorized</p>
-        </div>
-        <div id="index" hidden="hidden">
-            <a href="oauth/authorize">Associate MEO Cloud</a>
-        </div>
-        <div id="player" hidden="hidden">
-            <audio autoplay controls>Your browser doesn't support the <em>audio</em> element</audio>
-            <div>
-                <button id="next" type="button">Next</button>
-                <button id="delete" type="button" disabled>Delete</button>
-            </div>
-        </div>
-    </body>
+
+<head>
+    <title>Cloud Player</title>
+
+    <!--<div>Icons made by <a href="http://www.flaticon.com/authors/madebyoliver" title="Madebyoliver">Madebyoliver</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>-->
+    <link rel="shortcut icon" href="/play-button.png" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
+    <script src="https://code.angularjs.org/1.5.5/angular-route.min.js"></script>
+
+    <script src="/js/URI.js"></script>
+    <script src="/js/hotkeys.min.js"></script>
+    <script src="/js/jsmediatags.min.js"></script>
+    <script src="/js/bundle.js"></script>
+
+     <link rel="stylesheet" href="/app.css">
+</head>
+
+<body ng-app="cloudPlayer">
+    <div ng-view></div>
+</body>
+
 </html>

@@ -1,0 +1,13 @@
+<div ng-show="player.showFileInfo">
+    <div><span>{{player.currentFile.artist}}</span> - <span>{{player.currentFile.title}}</span></div>
+    <div><small>{{player.currentFile.album}}</small><small> ({{player.currentFile.year}})</small></div>
+</div>
+
+<audio autoplay controls ng-src="{{player.currentFile.url | trustedUrl}}" cp-bind="ended" cp-bind-handler="player.next()">
+    Your browser doesn't support the <em>audio</em> element
+</audio>
+
+<div>
+    <button type="button" ng-click="player.next()" ng-disabled="!player.canPlay" hotkey="{'ctrl+right': player.next}">Next</button>
+    <button type="button" cp-confirm-click="player.deleteCurrent()" ng-disabled="!player.canDelete">Delete</button>
+</div>
