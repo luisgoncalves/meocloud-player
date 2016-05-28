@@ -76,8 +76,8 @@ gulp.task('dist:main', function () {
         .pipe(gulp.dest('dist'));
 
     return gulp.src('app/index.html')
-        .pipe(inject(scripts, { ignorePath: 'dist', removeTags: true }))
-        .pipe(inject(styles, { ignorePath: 'dist', removeTags: true }))
+        .pipe(inject(scripts, { ignorePath: 'dist', addRootSlash: false, removeTags: true }))
+        .pipe(inject(styles, { ignorePath: 'dist', addRootSlash: false, removeTags: true }))
         .pipe(gulp.dest('dist'));
 });
 
