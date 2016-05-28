@@ -70,7 +70,7 @@ var vendorScripts = function () {
 
 gulp.task('default', function () {
     //gulp.start('assets', 'main');
-    var scripts = series(vendorScripts(), appScripts());
+    var scripts = series(vendorScripts(), appScripts(), gulp.src('app/styles/*.css'));
     return gulp.src('app/index.html')
         .pipe(inject(scripts, { relative: true }))
         .pipe(gulp.dest('app'));
