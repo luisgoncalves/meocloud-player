@@ -10,6 +10,18 @@ Try it live on https://luisgoncalves.github.io/meocloud-player/. Confirm that th
 	- Updated on each usage (partial updates using the *delta* APIs)
 - Uses Local Storage and IndexedDB (may request permissions)
 
+## Run locally
+
+You'll need Git and node/npm.
+
+1. `git clone git@github.com:luisgoncalves/meocloud-player.git`
+1. `cd meocloud-player`
+1. `npm install`
+1. `npm start`
+1. Browse to http://127.0.0.1:8080
+
+You can try the player with dropbox by changing the configuration on `app/scripts/app.js`.
+
 ## Disclaimer
 
 This project was developed to improve my Javascript/client-side knowledge and explore some libraries/tools/etc.
