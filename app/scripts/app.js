@@ -60,8 +60,8 @@
             });
     }]);
 
-    app.run(function ($http, $httpParamSerializerJQLike) {
+    app.run(['$http', '$httpParamSerializerJQLike', function ($http, $httpParamSerializerJQLike) {
         $http.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
         $http.defaults.transformRequest.unshift($httpParamSerializerJQLike);
-    });
+    }]);
 })();
