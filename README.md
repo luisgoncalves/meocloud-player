@@ -1,30 +1,28 @@
-# MEO Cloud Player
+# CloudPlayer
 
-Minimalistic client-side music player for files on [MEO Cloud](https://meocloud.pt/). Also compatible with Dropbox.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.2.7.
 
-Try it live on https://luisgoncalves.github.io/meocloud-player/. Confirm that the URL remains over SSL (GitHub pages sometimes [redirects to non-SSL URLs](https://github.com/isaacs/github/issues/289)).
+## Development server
 
-- Associates cloud account on first access 
-- Plays random music files (MP3, WAV)
-- Music files metadata is stored locally on the browser
-	- Updated on each usage (partial updates using the *delta* APIs)
-- Uses Local Storage and IndexedDB (may request permissions)
+Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-## Run locally
+## Code scaffolding
 
-You'll need Git and node/npm.
+Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
 
-1. `git clone git@github.com:luisgoncalves/meocloud-player.git`
-1. `cd meocloud-player`
-1. `npm install`
-1. `npm start`
-1. Browse to http://127.0.0.1:8080
+## Build
 
-You can try the player with dropbox by changing the configuration on `app/scripts/app.js`.
+Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
 
-## Disclaimer
+## Running unit tests
 
-This project was developed to improve my Javascript/client-side knowledge and explore some libraries/tools/etc.
+Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
 
-- The first version is plain old Javascript with the help of jQuery
-- The second version is based on Angular JS
+## Running end-to-end tests
+
+Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+Before running the tests make sure you are serving the app via `ng serve`.
+
+## Further help
+
+To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
