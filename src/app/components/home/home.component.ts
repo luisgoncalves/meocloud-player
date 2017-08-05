@@ -1,5 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { CloudConfiguration } from '../../cloud-config';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs/Observable';
+
+import { CloudConfiguration } from '../../models/cloud-config';
+import { AppState } from '../../app.store';
+import { hasCloudAccessToken } from '../../reducers';
 
 @Component({
   templateUrl: './home.component.html',
@@ -7,6 +12,9 @@ import { CloudConfiguration } from '../../cloud-config';
 })
 export class HomeComponent {
 
-  constructor(private readonly cloud: CloudConfiguration) { }
+  hasToken$: Observable<boolean>;
 
+  constructor(public readonly cloud: CloudConfiguration, store: Store<AppState>) {
+    this.hasToken$ = store.select(hasCloudAccessToken);
+  }
 }
