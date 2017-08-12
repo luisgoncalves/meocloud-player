@@ -10,6 +10,8 @@ import { PlayerComponent } from './components/player/player.component';
 import { OAuthComponent } from './components/oauth/oauth.component';
 
 import { CloudClientService } from './services/cloud-client.service';
+import { OAuth2ImplicitFlowService } from './services/oauth2-implicit.service';
+import { WindowRef } from './services/window-ref';
 
 import { environment } from '../environments/environment';
 import { CloudConfiguration, clouds } from './models/cloud-config';
@@ -25,7 +27,7 @@ const appRoutes: Routes = [
 ];
 
 const initialState: AppState = {
-  cloud: { accessToken: undefined},
+  cloud: { accessToken: undefined },
   player: {}
 };
 
@@ -44,7 +46,9 @@ const initialState: AppState = {
   providers: [
     { provide: CloudConfiguration, useValue: cloudConfig },
     { provide: INITIAL_STATE, useValue: initialState },
-    CloudClientService
+    CloudClientService,
+    OAuth2ImplicitFlowService,
+    WindowRef,
   ],
   bootstrap: [AppComponent]
 })

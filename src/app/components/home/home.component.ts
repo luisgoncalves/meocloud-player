@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
 
@@ -13,8 +14,19 @@ import { hasCloudAccessToken } from '../../reducers';
 export class HomeComponent {
 
   hasToken$: Observable<boolean>;
+  authzUrl: string;
 
-  constructor(public readonly cloud: CloudConfiguration, store: Store<AppState>) {
+  constructor(
+    public readonly cloud: CloudConfiguration,
+    route: ActivatedRoute,
+    router: Router,
+    store: Store<AppState>) {
+
     this.hasToken$ = store.select(hasCloudAccessToken);
+
+    // OAuth callbacks are delivered on the root; route accordingly if needed.
+    if (route.snapshot.fragment) {
+      router.navigate(['/oauth/callback'], { preserveFragment: true });
+    }
   }
 }
