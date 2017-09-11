@@ -4,6 +4,7 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
 
 import { CloudConfiguration } from '../../models/cloud-config';
+import * as Uri from 'urijs';
 import { AppState } from '../../app.store';
 import { hasCloudAccessToken } from '../../reducers';
 
@@ -14,7 +15,6 @@ import { hasCloudAccessToken } from '../../reducers';
 export class HomeComponent {
 
   hasToken$: Observable<boolean>;
-  authzUrl: string;
 
   constructor(
     public readonly cloud: CloudConfiguration,
@@ -24,9 +24,18 @@ export class HomeComponent {
 
     this.hasToken$ = store.select(hasCloudAccessToken);
 
+    const routeSnapshot = route.snapshot;
+
     // OAuth callbacks are delivered on the root; route accordingly if needed.
-    if (route.snapshot.fragment) {
+    if (routeSnapshot.fragment) {
       router.navigate(['/oauth/callback'], { preserveFragment: true });
+    }
+
+    // MEO Cloud has a bug and doesn't return errors on the URL fragment. Assume this
+    // is a bogus OAuth callback if it has query string.
+    if (routeSnapshot.queryParams.error) {
+      const fragment = Uri.buildQuery(routeSnapshot.queryParams);
+      router.navigate(['/oauth/callback'], { fragment });
     }
   }
 }

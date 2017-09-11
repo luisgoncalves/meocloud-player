@@ -8,10 +8,12 @@ import * as Uri from 'urijs';
 import { CloudConfiguration } from '../models/cloud-config';
 import { WindowRef } from './window-ref';
 
-export interface AuthorizationResponse {
-    success: boolean;
-    token?: string;
-    error?: string;
+export class AuthorizationSuccessResponse {
+    constructor(public readonly token: string) { }
+}
+
+export class AuthorizationErrorResponse {
+    constructor(public readonly error: string) { }
 }
 
 const OAUTH_STATE = 'oauth_state';
@@ -48,36 +50,29 @@ export class OAuth2ImplicitFlowService {
         });
     }
 
-    processAuthzResponse(fragment: string): AuthorizationResponse {
-
-        const error = (err: string): AuthorizationResponse => {
-            return { success: false, error: err };
-        };
+    processAuthzResponse(fragment: string): AuthorizationSuccessResponse | AuthorizationErrorResponse {
 
         const res = <any>Uri.parseQuery(fragment);
 
         if (!res.state) {
-            return error('invalid response');
+            return new AuthorizationErrorResponse('invalid response');
         }
 
         // Check state against existing state
         const state = this.storage.getItem(OAUTH_STATE);
         this.storage.removeItem(OAUTH_STATE);
         if (!state || state !== res.state) {
-            return error('missing or invalid state');
+            return new AuthorizationErrorResponse('missing or invalid state');
         }
 
         if (res.error) {
-            return error(res.error);
+            return new AuthorizationErrorResponse(res.error);
         }
 
         if (!res.access_token) {
-            return error('invalid response');
+            return new AuthorizationErrorResponse('invalid response');
         }
 
-        return {
-            success: true,
-            token: res.access_token
-        };
+        return new AuthorizationSuccessResponse(res.access_token);
     }
 }
