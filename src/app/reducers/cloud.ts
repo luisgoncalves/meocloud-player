@@ -1,8 +1,8 @@
 import { CloudState } from '../app.store';
-import { Actions, AccessTokenObtainedAction } from '../actions/cloud';
+import { Actions, AccessTokenObtained } from '../actions/cloud';
 
 export function reducer(state: CloudState = {}, action: Actions): CloudState {
-  if (action instanceof AccessTokenObtainedAction) {
+  if (action instanceof AccessTokenObtained) {
     return {
       ...state,
       accessToken: action.payload

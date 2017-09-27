@@ -2,9 +2,10 @@ import { Action } from '@ngrx/store';
 
 const prefix = 'CLOUD__';
 
-export class AccessTokenObtainedAction implements Action {
-  readonly type = `${prefix}ACCESS_TOKEN_OBTAINED`;
+export class AccessTokenObtained implements Action {
+  static readonly type = `${prefix}ACCESS_TOKEN_OBTAINED`;
+  readonly type = AccessTokenObtained.type;
   constructor(public payload: string) { }
 }
 
-export type Actions = AccessTokenObtainedAction;
+export type Actions = AccessTokenObtained;
