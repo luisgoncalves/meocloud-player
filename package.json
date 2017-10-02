@@ -6,6 +6,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:meocloud": "ng build --target=production --env=meocloud --base-href /meocloud-player",
     "test": "ng test",
     "lint": "ng lint"
   },

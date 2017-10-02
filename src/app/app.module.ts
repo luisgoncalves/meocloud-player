@@ -29,7 +29,7 @@ const appRoutes: Routes = [
   { path: '', component: HomeComponent },
 ];
 
-function getInitialState(persistence: PersistenceService): AppState {
+export function getInitialState(persistence: PersistenceService): AppState {
   return {
     cloud: { accessToken: persistence.accessToken },
     player: {}
