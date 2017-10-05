@@ -2,9 +2,9 @@ import { Component } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
+import * as Uri from 'urijs';
 
 import { CloudConfiguration } from '../../models/cloud-config';
-import * as Uri from 'urijs';
 import { AppState } from '../../app.store';
 import { hasCloudAccessToken } from '../../reducers';
 

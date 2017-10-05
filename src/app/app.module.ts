@@ -1,9 +1,9 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, Injectable } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { StoreModule, INITIAL_STATE } from '@ngrx/store';
-import { EffectsModule } from '@ngrx/effects';
+import { EffectsModule, Effect, Actions } from '@ngrx/effects';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
@@ -19,6 +19,7 @@ import { environment } from '../environments/environment';
 import { CloudConfiguration, clouds } from './models/cloud-config';
 import { reducers } from './reducers';
 import { CloudEffects } from './effects/cloud';
+import { PlayerEffects } from './effects/player';
 import { AppState } from './app.store';
 
 const cloudConfig = clouds[environment.cloudName](environment.clientId);
@@ -32,8 +33,17 @@ const appRoutes: Routes = [
 export function getInitialState(persistence: PersistenceService): AppState {
   return {
     cloud: { accessToken: persistence.accessToken },
-    player: {}
+    player: { files: [] }
   };
+}
+
+@Injectable()
+export class LogEffects {
+
+  @Effect({ dispatch: false })
+  log = this.actions$.do(console.log);
+
+  constructor(private readonly actions$: Actions) { }
 }
 
 @NgModule({
@@ -47,7 +57,7 @@ export function getInitialState(persistence: PersistenceService): AppState {
     BrowserModule,
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot(reducers),
-    EffectsModule.forRoot([CloudEffects])
+    EffectsModule.forRoot([LogEffects, CloudEffects, PlayerEffects])
   ],
   providers: [
     { provide: CloudConfiguration, useValue: cloudConfig },

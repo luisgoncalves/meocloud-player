@@ -1,3 +1,3 @@
 export class SongFile {
-  uri: string;
+  url: string;
 }

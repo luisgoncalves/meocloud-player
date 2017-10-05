@@ -1,4 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs/Observable';
+
+import { AppState } from '../../app.store';
+import { SongFile } from '../../models/song-file';
+import { getPlayerCurrentFile } from '../../reducers';
+import { UpdateFileList, LoadRandomFile } from '../../actions/player';
 
 @Component({
   templateUrl: './player.component.html',
@@ -6,9 +13,17 @@ import { Component, OnInit } from '@angular/core';
 })
 export class PlayerComponent implements OnInit {
 
-  constructor() { }
+  readonly currentFile$: Observable<SongFile | undefined>;
 
-  ngOnInit() {
+  constructor(private readonly store: Store<AppState>) {
+    this.currentFile$ = store.select(getPlayerCurrentFile);
   }
 
+  ngOnInit() {
+    this.store.dispatch(new UpdateFileList());
+  }
+
+  next(): void {
+    this.store.dispatch(new LoadRandomFile());
+  }
 }

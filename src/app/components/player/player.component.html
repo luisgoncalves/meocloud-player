@@ -1,3 +1,9 @@
-<p>
-  player works!
-</p>
+<div *ngIf="currentFile$ | async; let file">
+  <audio autoplay controls [src]="file.url" (ended)="next()">
+    Your browser doesn't support the <em>audio</em> element
+  </audio>
+</div>
+<div>
+    <button type="button" (click)="next()">Next</button>
+    <button type="button" disabled="disabled">Delete</button>
+</div>

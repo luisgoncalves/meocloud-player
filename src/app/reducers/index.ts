@@ -17,3 +17,8 @@ export const hasCloudAccessToken = createSelector(
   getCloudAccessToken,
   token => token ? true : false
 );
+
+export const getPlayerCurrentFile = createSelector(
+  (state: AppState) => state.player,
+  player.getCurrentFile
+);
