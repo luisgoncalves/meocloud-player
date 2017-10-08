@@ -14,6 +14,7 @@ import { CloudClientService } from './services/cloud-client.service';
 import { OAuth2ImplicitFlowService } from './services/oauth2-implicit.service';
 import { PersistenceService } from './services/persistence.service';
 import { WindowRef } from './services/window-ref';
+import { HasTokenGuard } from './services/token-guard.service';
 
 import { environment } from '../environments/environment';
 import { CloudConfiguration, clouds } from './models/cloud-config';
@@ -25,7 +26,7 @@ import { AppState } from './app.store';
 const cloudConfig = clouds[environment.cloudName](environment.clientId);
 
 const appRoutes: Routes = [
-  { path: 'player', component: PlayerComponent },
+  { path: 'player', component: PlayerComponent, canActivate: [HasTokenGuard] },
   { path: 'oauth/:mode', component: OAuthComponent },
   { path: '', component: HomeComponent },
 ];
@@ -66,6 +67,7 @@ export class LogEffects {
     OAuth2ImplicitFlowService,
     PersistenceService,
     WindowRef,
+    HasTokenGuard
   ],
   bootstrap: [AppComponent]
 })
