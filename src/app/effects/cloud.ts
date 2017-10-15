@@ -10,7 +10,11 @@ export class CloudEffects {
   @Effect({ dispatch: false })
   storeAccessToken = this.actions$
     .ofType<AccessTokenObtained>(AccessTokenObtained.type)
-    .do(action => this.persistence.setAccessToken(action.payload));
+    .do(action => {
+      this.persistence.setAccessToken(action.payload);
+    });
 
-  constructor(private readonly actions$: Actions, private readonly persistence: PersistenceService) { }
+  constructor(
+    private readonly actions$: Actions,
+    private readonly persistence: PersistenceService) { }
 }

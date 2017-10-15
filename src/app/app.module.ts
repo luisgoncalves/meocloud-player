@@ -1,6 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule, Injectable } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 
 import { StoreModule, INITIAL_STATE } from '@ngrx/store';
 import { EffectsModule, Effect, Actions } from '@ngrx/effects';
@@ -12,6 +13,7 @@ import { OAuthComponent } from './components/oauth/oauth.component';
 
 import { CloudClientService } from './services/cloud-client.service';
 import { OAuth2ImplicitFlowService } from './services/oauth2-implicit.service';
+import { FileManagerService } from './services/file-manager.service';
 import { PersistenceService } from './services/persistence.service';
 import { WindowRef } from './services/window-ref';
 import { HasTokenGuard } from './services/token-guard.service';
@@ -33,7 +35,7 @@ const appRoutes: Routes = [
 
 export function getInitialState(persistence: PersistenceService): AppState {
   return {
-    cloud: { accessToken: persistence.accessToken },
+    cloud: { accessToken: persistence.accessToken, cursor: persistence.lastCursor },
     player: { files: [] }
   };
 }
@@ -57,6 +59,7 @@ export class LogEffects {
   imports: [
     BrowserModule,
     RouterModule.forRoot(appRoutes),
+    HttpClientModule,
     StoreModule.forRoot(reducers),
     EffectsModule.forRoot([LogEffects, CloudEffects, PlayerEffects])
   ],
@@ -65,6 +68,7 @@ export class LogEffects {
     { provide: INITIAL_STATE, useFactory: getInitialState, deps: [PersistenceService] },
     CloudClientService,
     OAuth2ImplicitFlowService,
+    FileManagerService,
     PersistenceService,
     WindowRef,
     HasTokenGuard
