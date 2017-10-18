@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule, Injectable } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { StoreModule, INITIAL_STATE } from '@ngrx/store';
 import { EffectsModule, Effect, Actions } from '@ngrx/effects';
@@ -17,6 +17,7 @@ import { FileManagerService } from './services/file-manager.service';
 import { PersistenceService } from './services/persistence.service';
 import { WindowRef } from './services/window-ref';
 import { HasTokenGuard } from './services/token-guard.service';
+import { FormUrlEncodedInterceptor } from './services/form-url-encoded.interceptor';
 
 import { environment } from '../environments/environment';
 import { CloudConfiguration, clouds } from './models/cloud-config';
@@ -35,7 +36,7 @@ const appRoutes: Routes = [
 
 export function getInitialState(persistence: PersistenceService): AppState {
   return {
-    cloud: { accessToken: persistence.accessToken, cursor: persistence.lastCursor },
+    cloud: { accessToken: persistence.accessToken },
     player: { files: [] }
   };
 }
@@ -71,7 +72,8 @@ export class LogEffects {
     FileManagerService,
     PersistenceService,
     WindowRef,
-    HasTokenGuard
+    HasTokenGuard,
+    { provide: HTTP_INTERCEPTORS, useClass: FormUrlEncodedInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })

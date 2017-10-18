@@ -1,7 +1,7 @@
 import { CloudState } from '../app.store';
 import * as c from '../actions/cloud';
 
-export function reducer(state: CloudState = { accessToken: null, cursor: null }, action: c.Actions): CloudState {
+export function reducer(state: CloudState = { accessToken: null }, action: c.Actions): CloudState {
 
   switch (action.type) {
     case c.AccessTokenObtained.type:

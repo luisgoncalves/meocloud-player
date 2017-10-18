@@ -10,6 +10,7 @@ import 'rxjs/add/observable/defer';
 
 import { FileManagerService } from '../services/file-manager.service';
 import { CloudClientService } from '../services/cloud-client.service';
+import { PersistenceService } from '../services/persistence.service';
 
 import { LoadRandomFile, LoadRandomFileSuccess, UpdateFileList, UpdateFileListSuccess } from '../actions/player';
 import { SongFile } from '../models/song-file';
@@ -37,14 +38,12 @@ export class PlayerEffects {
   @Effect()
   updateFileList = this.actions$
     .ofType<UpdateFileList>(UpdateFileList.type)
-    .withLatestFrom(this.store)
-    .switchMap(([_, state]) => {
-      return this.cloudClient.delta(state.cloud.cursor)
-        .take(4) // TEMP
+    .switchMap(() => {
+      return this.cloudClient.delta(this.persistence.lastCursor)
         .switchMap(delta => this.fileManager.processUpdate(delta))
+        .do(delta => this.persistence.setLastCursor(delta.cursor))
         .last()
         .map(() => new UpdateFileListSuccess(PlayerEffects.files));
-      // return Observable.timer(2000).map(__ => new UpdateFileListSuccess(PlayerEffects.files));
     });
 
   // @Effect()
@@ -56,5 +55,6 @@ export class PlayerEffects {
     private readonly actions$: Actions,
     private readonly store: Store<AppState>,
     private readonly fileManager: FileManagerService,
-    private readonly cloudClient: CloudClientService) { }
+    private readonly cloudClient: CloudClientService,
+    private readonly persistence: PersistenceService) { }
 }

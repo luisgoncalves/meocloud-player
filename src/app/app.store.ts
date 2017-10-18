@@ -7,7 +7,6 @@ export interface AppState {
 
 export interface CloudState {
   accessToken: string | null;
-  cursor: string | null;
 }
 
 export interface PlayerState {

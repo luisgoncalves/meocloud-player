@@ -45,8 +45,7 @@ export class FileManagerService {
     });
   }
 
-  processUpdate(delta: Delta): Promise<any> {
-    this.window.console.log('processUpdate', delta);
-    return Promise.resolve();
+  processUpdate(delta: Delta): Promise<Delta> {
+    return Promise.resolve(delta);
   }
 }
