@@ -12,7 +12,7 @@ import { FileManagerService } from '../services/file-manager.service';
 import { CloudClientService } from '../services/cloud-client.service';
 import { PersistenceService } from '../services/persistence.service';
 
-import { LoadRandomFile, LoadRandomFileSuccess, UpdateFileList, UpdateFileListSuccess } from '../actions/player';
+import * as p from '../actions/player';
 import { SongFile } from '../models/song-file';
 import { AppState } from '../app.store';
 
@@ -30,26 +30,32 @@ export class PlayerEffects {
 
   @Effect()
   loadFile = this.actions$
-    .ofType<LoadRandomFile>(LoadRandomFile.type)
+    .ofType<p.LoadRandomFile>(p.LoadRandomFile.type)
     .withLatestFrom(this.store)
     .map(([_, state]) => state.player.files)
-    .map(files => new LoadRandomFileSuccess(files[Math.floor(Math.random() * files.length)]));
+    .map(files => new p.LoadRandomFileSuccess(files[Math.floor(Math.random() * files.length)]));
 
   @Effect()
   updateFileList = this.actions$
-    .ofType<UpdateFileList>(UpdateFileList.type)
+    .ofType<p.UpdateFileList>(p.UpdateFileList.type)
     .switchMap(() => {
       return this.cloudClient.delta(this.persistence.lastCursor)
         .switchMap(delta => this.fileManager.processUpdate(delta))
         .do(delta => this.persistence.setLastCursor(delta.cursor))
         .last()
-        .map(() => new UpdateFileListSuccess(PlayerEffects.files));
+        .map(() => new p.UpdateFileListSuccess(PlayerEffects.files));
     });
 
-  // @Effect()
-  // updateFileListSuccess = this.actions$
-  //   .ofType<UpdateFileListSuccess>(UpdateFileListSuccess.type);
-  // .map(_ => new LoadRandomFile());
+  @Effect()
+  deleteFile = this.actions$
+    .ofType<p.DeleteFile>(p.DeleteFile.type)
+    .do(a => console.log(a))
+    .map(a => new p.DeleteFileSuccess(a.payload));
+
+  @Effect()
+  deleteFileSuccess = this.actions$
+    .ofType(p.UpdateFileListSuccess.type, p.DeleteFileSuccess.type)
+    .map(_ => new p.LoadRandomFile());
 
   constructor(
     private readonly actions$: Actions,

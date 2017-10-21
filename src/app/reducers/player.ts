@@ -6,23 +6,42 @@ export function reducer(state: PlayerState, action: p.Actions): PlayerState {
   switch (action.type) {
 
     case p.LoadRandomFile.type:
-      // TODO set 'loading' status
-      return state;
+      return {
+        ...state,
+        busy: true
+      };
 
     case p.LoadRandomFileSuccess.type:
       return {
         ...state,
-        currentFile: action.payload
+        currentFile: action.payload,
+        busy: false
       };
 
     case p.UpdateFileList.type:
-      // TODO set 'loading' status
-      return state;
+      return {
+        ...state,
+        busy: true
+      };
 
     case p.UpdateFileListSuccess.type:
       return {
         ...state,
-        files: action.payload
+        files: action.payload,
+        busy: false
+      };
+
+    case p.DeleteFile.type:
+      return {
+        ...state,
+        busy: true
+      };
+
+    case p.DeleteFileSuccess.type:
+      return {
+        ...state,
+        files: state.files.filter(f => f !== action.payload),
+        busy: false
       };
   }
 

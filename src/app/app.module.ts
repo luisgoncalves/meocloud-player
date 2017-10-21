@@ -37,7 +37,7 @@ const appRoutes: Routes = [
 export function getInitialState(persistence: PersistenceService): AppState {
   return {
     cloud: { accessToken: persistence.accessToken },
-    player: { files: [] }
+    player: { files: [], busy: false },
   };
 }
 

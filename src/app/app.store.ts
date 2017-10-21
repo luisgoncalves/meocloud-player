@@ -12,4 +12,5 @@ export interface CloudState {
 export interface PlayerState {
   currentFile?: SongFile;
   files: SongFile[];
+  busy: boolean;
 }

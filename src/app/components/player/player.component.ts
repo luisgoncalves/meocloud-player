@@ -5,7 +5,7 @@ import { Observable } from 'rxjs/Observable';
 import { AppState } from '../../app.store';
 import { SongFile } from '../../models/song-file';
 import { getPlayerCurrentFile } from '../../reducers';
-import { UpdateFileList, LoadRandomFile } from '../../actions/player';
+import { UpdateFileList, LoadRandomFile, DeleteFile } from '../../actions/player';
 
 @Component({
   templateUrl: './player.component.html',
@@ -25,5 +25,9 @@ export class PlayerComponent implements OnInit {
 
   next(): void {
     this.store.dispatch(new LoadRandomFile());
+  }
+
+  delete(file: SongFile): void {
+    this.store.dispatch(new DeleteFile(file));
   }
 }
