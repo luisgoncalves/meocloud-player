@@ -22,3 +22,8 @@ export const getPlayerCurrentFile = createSelector(
   (state: AppState) => state.player,
   player.getCurrentFile
 );
+
+export const getPlayerBusy = createSelector(
+  (state: AppState) => state.player,
+  player.getBusy
+);

@@ -1,0 +1,9 @@
+<div *ngIf="file">
+  <audio autoplay controls [src]="file.url" (ended)="onNext()">
+    Your browser doesn't support the <em>audio</em> element
+  </audio>
+</div>
+<div>
+    <button type="button" (click)="onNext()" [disabled]="busy">Next</button>
+    <button type="button" (click)="onDelete()" [disabled]="busy">Delete</button>
+</div>

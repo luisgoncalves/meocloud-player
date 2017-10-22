@@ -49,7 +49,6 @@ export class PlayerEffects {
   @Effect()
   deleteFile = this.actions$
     .ofType<p.DeleteFile>(p.DeleteFile.type)
-    .do(a => console.log(a))
     .map(a => new p.DeleteFileSuccess(a.payload));
 
   @Effect()

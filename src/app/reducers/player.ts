@@ -49,3 +49,4 @@ export function reducer(state: PlayerState, action: p.Actions): PlayerState {
 }
 
 export const getCurrentFile = (state: PlayerState) => state.currentFile;
+export const getBusy = (state: PlayerState) => state.busy;

@@ -1,9 +1,6 @@
-<div *ngIf="currentFile$ | async; let file">
-  <audio autoplay controls [src]="file.url" (ended)="next()">
-    Your browser doesn't support the <em>audio</em> element
-  </audio>
-</div>
-<div>
-    <button type="button" (click)="next()">Next</button>
-    <button type="button" (click)="delete(file)">Delete</button>
-</div>
+<current-file
+    [file]="currentFile$ | async"
+    [busy]="busy$ | async"
+    (next)="next()"
+    (delete)="delete($event)">
+</current-file>

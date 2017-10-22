@@ -25,6 +25,7 @@ import { reducers } from './reducers';
 import { CloudEffects } from './effects/cloud';
 import { PlayerEffects } from './effects/player';
 import { AppState } from './app.store';
+import { CurrentFileComponent } from './components/player/current-file.component';
 
 const cloudConfig = clouds[environment.cloudName](environment.clientId);
 
@@ -55,6 +56,7 @@ export class LogEffects {
     AppComponent,
     HomeComponent,
     PlayerComponent,
+    CurrentFileComponent,
     OAuthComponent
   ],
   imports: [

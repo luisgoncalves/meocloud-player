@@ -4,7 +4,7 @@ import { Observable } from 'rxjs/Observable';
 
 import { AppState } from '../../app.store';
 import { SongFile } from '../../models/song-file';
-import { getPlayerCurrentFile } from '../../reducers';
+import { getPlayerCurrentFile, getPlayerBusy } from '../../reducers';
 import { UpdateFileList, LoadRandomFile, DeleteFile } from '../../actions/player';
 
 @Component({
@@ -14,9 +14,11 @@ import { UpdateFileList, LoadRandomFile, DeleteFile } from '../../actions/player
 export class PlayerComponent implements OnInit {
 
   readonly currentFile$: Observable<SongFile | undefined>;
+  readonly busy$: Observable<boolean>;
 
   constructor(private readonly store: Store<AppState>) {
     this.currentFile$ = store.select(getPlayerCurrentFile);
+    this.busy$ = store.select(getPlayerBusy);
   }
 
   ngOnInit() {
