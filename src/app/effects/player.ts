@@ -13,17 +13,10 @@ import { CloudClientService } from '../services/cloud-client.service';
 import { PersistenceService } from '../services/persistence.service';
 
 import * as p from '../actions/player';
-import { SongFile } from '../models/song-file';
 import { AppState } from '../app.store';
 
 @Injectable()
 export class PlayerEffects {
-
-  private static readonly files: SongFile[] = [
-    { url: 'http://www.noiseaddicts.com/samples_1w72b820/4927.mp3' },
-    { url: 'http://www.noiseaddicts.com/samples_1w72b820/293.mp3' },
-    { url: 'http://www.noiseaddicts.com/samples_1w72b820/4936.mp3' }
-  ];
 
   @Effect({ dispatch: false })
   openDatabase$ = Observable.defer(() => this.fileManager.openDatabase());
@@ -33,18 +26,24 @@ export class PlayerEffects {
     .ofType<p.LoadRandomFile>(p.LoadRandomFile.type)
     .withLatestFrom(this.store)
     .map(([_, state]) => state.player.files)
-    .map(files => new p.LoadRandomFileSuccess(files[Math.floor(Math.random() * files.length)]));
+    .map(files => files[Math.floor(Math.random() * files.length)])
+    .switchMap(file => this.cloudClient
+      .getFileUrl(file.path)
+      .map(fileUrl => new p.LoadRandomFileSuccess({ ...file, url: fileUrl.url }))
+    );
 
   @Effect()
   updateFileList = this.actions$
     .ofType<p.UpdateFileList>(p.UpdateFileList.type)
-    .switchMap(() => {
-      return this.cloudClient.delta(this.persistence.lastCursor)
-        .switchMap(delta => this.fileManager.processUpdate(delta))
-        .do(delta => this.persistence.setLastCursor(delta.cursor))
-        .last()
-        .map(() => new p.UpdateFileListSuccess(PlayerEffects.files));
-    });
+    .switchMap(() => this.cloudClient
+      .delta(this.persistence.lastCursor)
+      .switchMap(delta => this.fileManager.processUpdate(delta))
+      // Store the last known cursor (this helps if something fails in large deltas)
+      .do(delta => this.persistence.setLastCursor(delta.cursor))
+      .last()
+    )
+    .switchMap(() => this.fileManager.getFiles())
+    .map(files => new p.UpdateFileListSuccess(files));
 
   @Effect()
   deleteFile = this.actions$
