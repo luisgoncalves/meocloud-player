@@ -5,5 +5,5 @@
 </div>
 <div>
     <button type="button" (click)="onNext()" [disabled]="busy">Next</button>
-    <button type="button" (click)="onDelete()" [disabled]="busy">Delete</button>
+    <button type="button" (confirmClick)="onDelete()" [disabled]="busy">Delete</button>
 </div>

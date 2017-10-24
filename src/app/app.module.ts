@@ -26,6 +26,7 @@ import { CloudEffects } from './effects/cloud';
 import { PlayerEffects } from './effects/player';
 import { AppState } from './app.store';
 import { CurrentFileComponent } from './components/player/current-file.component';
+import { ConfirmClickDirective } from './directives/confirm-click.directive';
 
 const cloudConfig = clouds[environment.cloudName](environment.clientId);
 
@@ -57,7 +58,8 @@ export class LogEffects {
     HomeComponent,
     PlayerComponent,
     CurrentFileComponent,
-    OAuthComponent
+    OAuthComponent,
+    ConfirmClickDirective
   ],
   imports: [
     BrowserModule,
