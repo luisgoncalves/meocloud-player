@@ -65,10 +65,14 @@ export class CloudClientService {
       { headers: this.headers });
   }
 
-  deleteFile(path: string) {
+  deleteFile(path: string): Observable<Object> {
+    const body = new URLSearchParams();
+    body.set('path', path);
+    body.set('root', this.cloud.root);
+
     return this.http.post(
       this.deleteFileUrl,
-      { path, root: this.cloud.root },
+      body,
       { headers: this.headers });
   }
 

@@ -48,12 +48,15 @@ export class PlayerEffects {
   @Effect()
   deleteFile = this.actions$
     .ofType<p.DeleteFile>(p.DeleteFile.type)
-    .map(a => new p.DeleteFileSuccess(a.payload));
+    .switchMap(a => this.cloudClient
+      .deleteFile(a.payload.path)
+      .map(() => new p.DeleteFileSuccess(a.payload))
+    );
 
   @Effect()
   deleteFileSuccess = this.actions$
     .ofType(p.UpdateFileListSuccess.type, p.DeleteFileSuccess.type)
-    .map(_ => new p.LoadRandomFile());
+    .map(() => new p.LoadRandomFile());
 
   constructor(
     private readonly actions$: Actions,
