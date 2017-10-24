@@ -1,28 +1,29 @@
-# CloudPlayer
+# MEO Cloud Player
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.2.7.
+Minimalistic client-side music player for files on [MEO Cloud](https://meocloud.pt/).
 
-## Development server
+Try it live on https://luisgoncalves.github.io/meocloud-player/. Confirm that the URL remains over SSL (GitHub pages sometimes [redirects to non-SSL URLs](https://github.com/isaacs/github/issues/289)).
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+- Associates cloud account on first access 
+- Plays random music files (MP3, WAV)
+- Music files metadata is stored locally on the browser
+	- Updated on each usage (partial updates using the *delta* APIs)
+- Uses Local Storage and IndexedDB (may request permissions)
 
-## Code scaffolding
+## Run locally
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+You'll need Git and node/npm.
 
-## Build
+1. `git clone git@github.com:luisgoncalves/meocloud-player.git`
+1. `cd meocloud-player`
+1. `npm install`
+1. `npm start`
+1. Browse to http://localhost:4200
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
+## Disclaimer
 
-## Running unit tests
+This project was developed to improve my Javascript/client-side knowledge and explore some libraries/tools/etc.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-Before running the tests make sure you are serving the app via `ng serve`.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+- The first version is plain old Javascript with the help of jQuery
+- The second version is based on Angular JS
+- The third version (current) is based on Angular and ngrx
