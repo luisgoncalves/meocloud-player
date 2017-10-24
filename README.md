@@ -1,6 +1,6 @@
 # MEO Cloud Player
 
-Minimalistic client-side music player for files on [MEO Cloud](https://meocloud.pt/). Also compatible with Dropbox.
+Minimalistic client-side music player for files on [MEO Cloud](https://meocloud.pt/).
 
 Try it live on https://luisgoncalves.github.io/meocloud-player/. Confirm that the URL remains over SSL (GitHub pages sometimes [redirects to non-SSL URLs](https://github.com/isaacs/github/issues/289)).
 
@@ -18,9 +18,7 @@ You'll need Git and node/npm.
 1. `cd meocloud-player`
 1. `npm install`
 1. `npm start`
-1. Browse to http://127.0.0.1:8080
-
-You can try the player with dropbox by changing the configuration on `app/scripts/app.js`.
+1. Browse to http://localhost:4200
 
 ## Disclaimer
 
@@ -28,3 +26,4 @@ This project was developed to improve my Javascript/client-side knowledge and ex
 
 - The first version is plain old Javascript with the help of jQuery
 - The second version is based on Angular JS
+- The third version (current) is based on Angular and ngrx

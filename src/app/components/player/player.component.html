@@ -1,0 +1,6 @@
+<current-file
+    [file]="currentFile$ | async"
+    [busy]="busy$ | async"
+    (next)="next()"
+    (delete)="delete($event)">
+</current-file>
