@@ -5,6 +5,7 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { StoreModule, INITIAL_STATE } from '@ngrx/store';
 import { EffectsModule, Effect, Actions } from '@ngrx/effects';
+import { HotkeyModule } from 'angular2-hotkeys';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
@@ -66,7 +67,8 @@ export class LogEffects {
     RouterModule.forRoot(appRoutes),
     HttpClientModule,
     StoreModule.forRoot(reducers),
-    EffectsModule.forRoot([LogEffects, CloudEffects, PlayerEffects])
+    EffectsModule.forRoot([LogEffects, CloudEffects, PlayerEffects]),
+    HotkeyModule.forRoot()
   ],
   providers: [
     { provide: CloudConfiguration, useValue: cloudConfig },
