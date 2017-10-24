@@ -1,0 +1,2 @@
+<a *ngIf="hasToken$ | async" routerLink="/player">Start player</a>
+<a *ngIf="!(hasToken$ | async)" routerLink="/oauth/authorize">Associate {{cloud.displayName}}</a>
