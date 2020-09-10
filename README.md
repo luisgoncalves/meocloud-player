@@ -1,5 +1,7 @@
 # MEO Cloud Player
 
+**NOTE**: this project hasn't been maintained for a while. It uses old versions of frameworks/libraries which may contain security issues.
+
 Minimalistic client-side music player for files on [MEO Cloud](https://meocloud.pt/).
 
 Try it live on https://luisgoncalves.github.io/meocloud-player/. Confirm that the URL remains over SSL (GitHub pages sometimes [redirects to non-SSL URLs](https://github.com/isaacs/github/issues/289)).
